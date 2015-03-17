@@ -1,6 +1,8 @@
 
 (function () {
 
+    var DEV = true;
+
     //  ██████╗ ██████╗ ██████╗ ███████╗
     // ██╔════╝██╔═══██╗██╔══██╗██╔════╝
     // ██║     ██║   ██║██████╔╝█████╗  
@@ -13,6 +15,7 @@
 
     // All created XVARS
     var elements = [];
+    if (DEV) X._elements = elements;  // accessor alias
 
     // Set how verbose is X.js
     var log = 1;
@@ -132,6 +135,18 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
     // ██╗  ██╗██╗    ██╗██████╗  █████╗ ██████╗ 
     // ╚██╗██╔╝██║    ██║██╔══██╗██╔══██╗██╔══██╗
     //  ╚███╔╝ ██║ █╗ ██║██████╔╝███████║██████╔╝
@@ -154,6 +169,21 @@
     var wrap = function(value){
         return new XWRAP(value);
     };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -187,7 +217,7 @@
      */
     X.bool = function() {
         if (arguments.length != 1) {
-            if (log) console.warn('X.js: invalid arguments for X.bool');
+            if (log) console.warn('X.js: invalid arguments for X.bool()');
             return undefined;
         };
 
@@ -365,6 +395,256 @@
             this._value = this._parents[0]._value <= this._parents[1]._value;
         }
     };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // ██╗  ██╗███╗   ██╗██╗   ██╗███╗   ███╗██████╗ ███████╗██████╗ 
+    // ╚██╗██╔╝████╗  ██║██║   ██║████╗ ████║██╔══██╗██╔════╝██╔══██╗
+    //  ╚███╔╝ ██╔██╗ ██║██║   ██║██╔████╔██║██████╔╝█████╗  ██████╔╝
+    //  ██╔██╗ ██║╚██╗██║██║   ██║██║╚██╔╝██║██╔══██╗██╔══╝  ██╔══██╗
+    // ██╔╝ ██╗██║ ╚████║╚██████╔╝██║ ╚═╝ ██║██████╔╝███████╗██║  ██║
+    // ╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝     ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝
+
+    var XNUMBER = function(value) {
+        var init = Number(value);  // Hard casting of input arg, true to JS default behaviors. If no arg is passed, will default to false.
+        XBASE.call(this, init);
+        this._type = 'XNUMBER';
+    };
+    XNUMBER.prototype = Object.create(XBASE.prototype);
+    XNUMBER.prototype.constructor = XNUMBER;
+
+    var XNUMBER_METHODS = [
+        'half',
+        'double',
+        'abs',
+        'sqrt',
+        'sin',
+        'cos',
+        'tan',
+        'round',
+        'floor',
+        'ceil',
+        'toDegrees',
+        'toRadians'
+    ];
+
+    XNUMBER_METHODS.forEach(function(prop) {
+        XNUMBER.prototype[prop] = function() {
+            return this._properties[prop] ?
+                    this._properties[prop] :
+                    this._register(prop, build('XNUMBER', [this], prop));
+        };
+    })
+
+
+    /**
+     * Main factory constructor from simple input value
+     * @return {XNUMBER}
+     */
+    X.number = function() {
+        if (arguments.length != 1) {
+            if (log) console.warn('X.js: invalid arguments for X.number()');
+            return undefined;
+        };
+
+        return build('XNUMBER', arguments, 'fromValue');
+    };
+    X.num = X.number;  // an alias
+
+
+    X.number.add = function() {
+        if (arguments.length < 2) {
+            if (log) console.log("X.js: Invalid arguments for X.number.add()");
+            return undefined;
+        }
+        return build('XNUMBER', arguments, 'add');
+    };
+
+    X.number.subtract = function(A, B) {
+        if (arguments.length != 2) {
+            if (log) console.log("X.js: Invalid arguments for X.number.subtract()");
+            return undefined;
+        }
+        return build('XNUMBER', arguments, 'subtract');
+    };
+
+    X.number.multiply = function() {
+        if (arguments.length < 2) {
+            if (log) console.log("X.js: Invalid arguments for X.number.multiply()");
+            return undefined;
+        }
+        return build('XNUMBER', arguments, 'multiply');
+    };
+
+    X.number.divide = function(A, B) {
+        if (arguments.length != 2) {
+            if (log) console.log("X.js: Invalid arguments for X.number.divide()");
+            return undefined;
+        }
+        return build('XNUMBER', arguments, 'divide');
+    };
+
+    X.number.modulo = function(A, B) {
+        if (arguments.length != 2) {
+            if (log) console.log("X.js: Invalid arguments for X.number.modulo()");
+            return undefined;
+        }
+        return build('XNUMBER', arguments, 'modulo');
+    };
+
+    X.number.pow = function(A, B) {
+        if (arguments.length != 2) {
+            if (log) console.log("X.js: Invalid arguments for X.number.pow()");
+            return undefined;
+        }
+        return build('XNUMBER', arguments, 'pow');
+    };
+
+    X.number.atan2 = function(Y, X) {
+        if (arguments.length != 2) {
+            if (log) console.log("X.js: Invalid arguments for X.number.atan2()");
+            return undefined;
+        }
+        return build('XNUMBER', arguments, 'atan2');
+    };
+
+
+
+
+    /**
+     * Main library of update methods for XNUMBER objects
+     * @type {Object}
+     */
+    XNUMBER._updates = {
+
+        fromValue: function() {
+            this._value = this._parents[0]._value;  // retrieve from wrapped parent
+        },
+
+
+        half: function() {
+            this._value = this._parents[0]._value / 2;
+        },
+
+        double: function() {
+            this._value = 2 * this._parents[0]._value;
+        },
+
+        abs: function() {
+            this._value = Math.abs(this._parents[0]._value);
+        },
+
+        sqrt: function() {
+            this._value = Math.sqrt(this._parents[0]._value);
+        },
+
+        sin: function() {
+            this._value = Math.sin(this._parents[0]._value);
+        },
+
+        cos: function() {
+            this._value = Math.cos(this._parents[0]._value);
+        },
+
+        tan: function() {
+            this._value = Math.tan(this._parents[0]._value);
+        },
+
+        round: function() {
+            this._value = Math.round(this._parents[0]._value);
+        },
+
+        floor: function() {
+            this._value = Math.floor(this._parents[0]._value);
+        },
+
+        ceil: function() {
+            this._value = Math.ceil(this._parents[0]._value);
+        },
+
+        toDegrees: function() {
+            this._value = this._parents[0]._value * 180 / Math.PI;
+        },
+
+        toRadians: function() {
+            this._value = this._parents[0]._value * Math.PI / 180;
+        },
+
+
+        add: function() {
+            this._value = 0;
+            for (var len = this._parents.length, i = 0; i < len; i++) {
+                this._value += this._parents[i]._value;
+            }
+        },
+
+        subtract: function() {
+            this._value = this._parents[0]._value - this._parents[1]._value;
+        },
+
+        multiply: function() {
+            this._value = this._parents[0]._value;
+            for (var len = this._parents.length, i = 1; i < len; i++) {
+                this._value *= this._parents[i]._value;
+            }
+        },
+
+        divide: function() {
+            this._value = this._parents[0]._value / this._parents[1]._value;
+        },
+
+        modulo: function() {
+            this._value = this._parents[0]._value % this._parents[1]._value;
+        },
+
+        pow: function() {
+            this._value = Math.pow(this._parents[0]._value, this._parents[1]._value);
+        },
+
+        atan2: function() {
+            this._value = Math.atan2(this._parents[0]._value, this._parents[1]._value);  // inputs were in the form (Y, X)
+        }
+
+    };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

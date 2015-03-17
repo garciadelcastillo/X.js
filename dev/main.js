@@ -1,5 +1,8 @@
 // X.setLogLevel(0);  // shut up
 
+//////////////////////////////////////////////////// //
+// XBOOLEAN                                          //
+///////////////////////////////////////////////////////
 var a = X.bool(true),
 	b = X.bool(true),
 	c = X.bool(false),
@@ -30,6 +33,39 @@ var gtAB  = X.bool.greater(a, b);
 var gteAB = X.bool.greaterEqual(a, b);
 var ltAB  = X.bool.less(a, b);
 var lteAB = X.bool.lessEqual(a, b);
+
+
+
+//////////////////////////////////////////////////// // //
+// XNUMBER                                              //
+//////////////////////////////////////////////////////////
+
+var u = X.number(2),
+	v = X.number(3),
+	w = X.number(4);
+
+var half = w.half(),
+	doub = w.double(),
+	abs  = w.abs(),
+	sqrt = w.sqrt(),
+	sin  = w.sin(),
+	cos  = w.cos(),
+	tan  = w.tan(),
+	roun = w.round(),
+	flr  = w.floor(),
+	ceil = w.ceil(),
+	degs = w.toDegrees(),
+	rads = w.toRadians();
+
+var add = X.number.add(u, v, w),
+	sub = X.number.subtract(u, v),
+	mul = X.number.multiply(u, v, w),
+	div = X.number.divide(u, v),
+	mod = X.number.modulo(v, u),
+	pow = X.number.pow(u, v),
+	at2 = X.number.atan2(v, u);
+
+
 
 
 X.tagVars(window);
