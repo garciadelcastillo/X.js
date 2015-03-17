@@ -1,3 +1,7 @@
+///////////
+// SETUP //
+///////////
+
 // X.setLogLevel(0);  // shut up
 
 //////////////////////////////////////////////////// //
@@ -66,7 +70,43 @@ var add = X.number.add(u, v, w),
 	at2 = X.number.atan2(v, u);
 
 
+////////////////////////////////////////////////////////// //
+// STRING                                                  //
+/////////////////////////////////////////////////////////////
 
+var s1 = X.string('Foo'),
+	s2 = X.string('Bar'),
+	s3 = X.string('Baz');
+
+var upp = s1.toUpperCase(),
+	low = s1.toLowerCase();
+
+var concat = X.string.concat(s1, ' ', s2, ' ', s3);
+
+var slc1 = concat.slice(3, 6),
+	slc2 = concat.slice(5);
+
+var index = X.number(6);
+
+var slc3 = concat.slice(3, index),
+	slc4 = concat.slice(index);
+
+var charAt = concat.charAt(index); 
+
+var repl = concat.replace('Bar', s1);
+
+// Method chaining! :)
+var chain = X.string.concat(s1, ' ', s2, ' ', s3).slice(1, 10).replace('Bar', s1);
+
+
+
+
+
+
+
+/////////
+// WIP //
+/////////
 
 X.tagVars(window);
 X.injectVars(window);

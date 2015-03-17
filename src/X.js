@@ -419,7 +419,7 @@
     // ╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝     ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝
 
     var XNUMBER = function(value) {
-        var init = Number(value);  // Hard casting of input arg, true to JS default behaviors. If no arg is passed, will default to false.
+        var init = Number(value);  // Hard casting of input arg, true to JS default behaviors. If no arg is passed, will default to NaN.
         XBASE.call(this, init);
         this._type = 'XNUMBER';
     };
@@ -648,6 +648,154 @@
 
 
 
+    // ██╗  ██╗███████╗████████╗██████╗ ██╗███╗   ██╗ ██████╗ 
+    // ╚██╗██╔╝██╔════╝╚══██╔══╝██╔══██╗██║████╗  ██║██╔════╝ 
+    //  ╚███╔╝ ███████╗   ██║   ██████╔╝██║██╔██╗ ██║██║  ███╗
+    //  ██╔██╗ ╚════██║   ██║   ██╔══██╗██║██║╚██╗██║██║   ██║
+    // ██╔╝ ██╗███████║   ██║   ██║  ██║██║██║ ╚████║╚██████╔╝
+    // ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝ ╚═════╝ 
+
+    var XSTRING = function(value) {
+        var init = String(value);  // Hard casting of input arg, true to JS default behaviors. If no arg is passed, will default to "undefined".
+        XBASE.call(this, init);
+        this._type = 'XSTRING';
+    };
+    XSTRING.prototype = Object.create(XBASE.prototype);
+    XSTRING.prototype.constructor = XSTRING;
+
+    var XSTRING_METHODS = [
+        'toLowerCase',
+        'toUpperCase'
+    ];
+
+    XSTRING_METHODS.forEach(function(prop) {
+        XSTRING.prototype[prop] = function() {
+            return this._properties[prop] ?
+                    this._properties[prop] :
+                    this._register(prop, build('XSTRING', [this], prop));
+        };
+    });
+
+    XSTRING.prototype.slice = function(start, end) {
+        if (arguments.length < 1 || arguments.length > 2) {
+            if (log) console.warn('X.js: invalid arguments for XSTRING.slice()');
+            return undefined;
+        };
+
+        var args = [this];
+        for (var i = 0; i < arguments.length; i++) {
+            args.push(arguments[i]);
+        }
+
+        return build('XSTRING', args, 'slice');
+    };
+
+    XSTRING.prototype.charAt = function(position) {
+        if (arguments.length != 1) {
+            if (log) console.warn('X.js: invalid arguments for XSTRING.charAt()');
+            return undefined;
+        };
+
+        return build('XSTRING', [this, position], 'charAt');
+    };
+
+    XSTRING.prototype.replace = function(subStr, newSubStr) {
+        if (arguments.length != 2) {
+            if (log) console.warn('X.js: invalid arguments for XSTRING.replace()');
+            return undefined;
+        };
+
+        return build('XSTRING', [this, subStr, newSubStr], 'replace');
+    };
+
+
+
+    /**
+     * Main factory constructor from simple input value
+     * @return {XNUMBER}
+     */
+    X.string = function() {
+        if (arguments.length != 1) {
+            if (log) console.warn('X.js: invalid arguments for X.string()');
+            return undefined;
+        };
+
+        return build('XSTRING', arguments, 'fromValue');
+    };
+    X.str = X.string;  // an alias
+
+
+    X.string.concat = function() {
+        return build('XSTRING', arguments, 'concat');
+    };
+
+
+
+
+    /**
+     * Main library of update methods for XSTRING objects
+     * @type {object}
+     */
+    XSTRING._updates = {
+
+        fromValue: function() {
+            this._value = this._parents[0]._value;  // retrieve from wrapped parent
+        },
+
+
+        toLowerCase: function() {
+            this._value = this._parents[0]._value.toLowerCase();
+        },
+
+        toUpperCase: function() {
+            this._value = this._parents[0]._value.toUpperCase();
+        },
+
+        slice: function() {
+            this._value = this._parents[0]._value.slice(this._parents[1]._value, 
+                    this._parents[2] ? this._parents[2]._value : undefined);
+        },
+
+        charAt: function() {
+            this._value = this._parents[0]._value.charAt(this._parents[1]._value);       
+        },
+
+        replace: function() {
+            this._value = this._parents[0]._value.replace(this._parents[1]._value, this._parents[2]._value);
+        },
+
+
+        concat: function() {
+            this._value = "";
+            for (var len = this._parents.length, i = 0; i < len; i++) {
+                this._value += this._parents[i]._value;
+            }
+        }
+
+    };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -674,7 +822,8 @@
     // An object mapping XVAR types to private constructors
     var _typeMap = {
         'XBOOL': XBOOL,
-        'XNUMBER': XNUMBER
+        'XNUMBER': XNUMBER,
+        'XSTRING': XSTRING
     };
 
     /**
@@ -730,102 +879,15 @@
 
 
 
-    // // ██╗   ██╗████████╗██╗██╗     ███████╗
-    // // ██║   ██║╚══██╔══╝██║██║     ██╔════╝
-    // // ██║   ██║   ██║   ██║██║     ███████╗
-    // // ██║   ██║   ██║   ██║██║     ╚════██║
-    // // ╚██████╔╝   ██║   ██║███████╗███████║
-    // //  ╚═════╝    ╚═╝   ╚═╝╚══════╝╚══════╝
-    // var util = {
 
-    //     /**
-    //      * Underscore's implementation of _.isNull
-    //      * @param  {Object}  obj
-    //      * @return {Boolean}
-    //      */
-    //     isNull: function(obj) {
-    //         return obj === null;
-    //     },
 
-    //     /**
-    //      * Underscore's implementation of _.isUndefined
-    //      * @param  {Object}  obj
-    //      * @return {Boolean}
-    //      */
-    //     isUndefined: function(obj) {
-    //         return obj === void 0;
-    //     },
 
-    //     /**
-    //      * Underscore's implementation of _.isBoolean
-    //      * @param  {Object}  obj
-    //      * @return {Boolean}
-    //      */
-    //     isBoolean: function(obj) {
-    //         return obj === true || obj === false || toString.call(obj) === '[object Boolean]';
-    //     },
 
-    //     /**
-    //      * Underscore's implementation of _.isNumber
-    //      * @param  {Object}  obj
-    //      * @return {Boolean}
-    //      */
-    //     isNumber: function(obj) {
-    //         return toString.call(obj) === '[object Number]';
-    //     },
 
-    //     *
-    //      * Underscore's implementation of _.isNaN (NaN is the only number that doesn't equal itself!)
-    //      * @param  {Object}  obj
-    //      * @return {Boolean}
-         
-    //     isNaN: function(obj) {
-    //         return this.isNumber(obj) && obj !== +obj;
-    //     },
 
-    //     /**
-    //      * Underscore's implementation of _.isFinite
-    //      * @param  {Object}  obj
-    //      * @return {Boolean}
-    //      */
-    //     isFinite: function(obj) {
-    //         return isFinite(obj) && !isNaN(parseFloat(obj));
-    //     },
 
-    //     /**
-    //      * Underscore's implementation of _.isFunction
-    //      * @param {Object}
-    //      * @return {Boolean}
-    //      */
-    //     isFunction: function(obj) {
-    //         return toString.call(obj) === '[object Function]';
-    //     },
 
-    //     /**
-    //      * Underscore's implementation of _.isArray
-    //      * @param {Object}
-    //      * @return {Boolean}
-    //      */
-    //     isArray: function(obj) {
-    //         // first try ECMAScript 5 native
-    //         if (Array.isArray) return Array.isArray(obj);
 
-    //         // else compare array
-    //         return toString.call(obj) === '[object Array]';
-    //     },
-
-    //     /**
-    //      * Underscore's implementation of _.isString
-    //      * @param  {Object}  obj 
-    //      * @return {Boolean}
-    //      */
-    //     isString: function(obj) {
-    //         return toString.call(obj) === '[object String]';
-    //     }
-
-    // };
-
-    // X.util = util;
 
 
     
