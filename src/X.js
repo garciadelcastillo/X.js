@@ -521,6 +521,31 @@
         return build('XNUMBER', arguments, 'atan2');
     };
 
+    /**
+     * Create a pseudo-random number generator with associative limits, 
+     * binding a .next() method to trigger random update.
+     * Influenced by C#'s Random Class
+     * @param  {object} min lower limit (optional)
+     * @param  {object} max upper limit (optional)
+     * @return {XNUMBER}
+     */
+    X.number.random = function(lim0, lim1) {
+        var min, max;
+        if (typeof lim1 === 'undefined') {
+            min = 0;
+            max = typeof lim0 === 'undefined' ? 1 : lim0;
+        } else {
+            min = lim0;
+            max = lim1;
+        }
+
+        // Create the object and bind a .next() method to get new values
+        var ran = build('XNUMBER', [Math.random(), min, max], 'random');
+        ran['next'] = XNUMBER._updates.randomNext;
+
+        return ran;
+    };
+
 
 
 
@@ -616,6 +641,17 @@
 
         atan2: function() {
             this._value = Math.atan2(this._parents[0]._value, this._parents[1]._value);  // inputs were in the form (Y, X)
+        },
+
+        random: function() {
+            // Updates the value without changing the random parameter. See 'randomNext'
+            this._value = this._parents[0]._value * (this._parents[2]._value - this._parents[1]._value)
+                    + this._parents[1]._value;
+        },
+
+        randomNext: function() {
+            // Uses parent setter to generate a new normalized random value (and trigger updates)
+            this._parents[0].val = Math.random();
         }
 
     };

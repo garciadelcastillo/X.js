@@ -69,6 +69,10 @@ var add = X.number.add(u, v, w),
 	pow = X.number.pow(u, v),
 	at2 = X.number.atan2(v, u);
 
+var ran1 = X.number.random(),
+	ran2 = X.number.random(w),
+	ran3 = X.number.random(-10, w);
+
 
 ////////////////////////////////////////////////////////// //
 // STRING                                                  //
