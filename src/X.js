@@ -13,6 +13,9 @@
     // The object containing the public accessors
     var X = {};
 
+    // Current context (window, module, global object, etc.)
+    var context = this;
+
     // All created XVARS
     var elements = [];
     if (DEV) X._elements = elements;  // accessor alias
@@ -147,6 +150,8 @@
 
 
 
+
+
     // ██╗  ██╗██╗    ██╗██████╗  █████╗ ██████╗ 
     // ╚██╗██╔╝██║    ██║██╔══██╗██╔══██╗██╔══██╗
     //  ╚███╔╝ ██║ █╗ ██║██████╔╝███████║██████╔╝
@@ -159,7 +164,7 @@
      */
     var XWRAP = function(value) {
         XBASE.call(this, value);
-        this._value = value;
+        //this._value = value;
         this._type = 'XWRAP';
         this._isConstrained = false;
     };
@@ -175,6 +180,81 @@
 
 
 
+
+
+
+
+
+
+
+
+    // ██╗  ██╗██╗   ██╗ █████╗ ██████╗ 
+    // ╚██╗██╔╝██║   ██║██╔══██╗██╔══██╗
+    //  ╚███╔╝ ██║   ██║███████║██████╔╝
+    //  ██╔██╗ ╚██╗ ██╔╝██╔══██║██╔══██╗
+    // ██╔╝ ██╗ ╚████╔╝ ██║  ██║██║  ██║
+    // ╚═╝  ╚═╝  ╚═══╝  ╚═╝  ╚═╝╚═╝  ╚═╝
+    var XVAR = function(value) {
+        XBASE.call(this, value);
+        this._type = 'XVAR';
+    };
+    XVAR.prototype = Object.create(XBASE.prototype);
+    XVAR.prototype.constructor = XVAR;
+
+
+
+    X.xvar = function(value) {
+        if (arguments.length != 1) {
+            if (log) console.warn('X.js: invalid arguments for X.xvar()');
+            return undefined;
+        };
+
+        return build('XVAR', arguments, 'fromValue');
+    };
+
+    X.xvar.compose = function() {
+        var a = arguments, len = a.length;
+
+        if (len < 2) {
+            if (log) console.warn('X.js: invalid arguments for X.xvar.compose()');
+            return undefined;
+        };
+
+        var callback = a[len - 1];
+        if ( is(callback).notType('function') ) {
+            if (log) console.warn('X.js: last argument must be a function for X.xvar.compose()');
+            return undefined;
+        };
+
+        var parents = [callback];
+        // parents.push(this);  // store current context as parent?
+        for (var i = 0; i < len - 1; i++) {
+            parents.push(a[i]);
+        }
+
+        return build('XVAR', parents, 'compose');
+    };
+
+
+
+    /**
+     * Main library of update methods for XVAR objects
+     * @type {Object}
+     */
+    XVAR._updates = {
+
+        fromValue: function() {
+            this._value = this._parents[0]._value;  // retrieve from wrapped parent
+        },
+
+        compose: function() {
+            // Call the update callback on the context it was created with scoped vars.
+            // Instead of using the global context, would it be better to store it as parent
+            // when object is composed?
+            this._value = this._parents[0]._value.apply(context, this._parents.slice(1));
+        }
+
+    };
 
 
 
@@ -857,6 +937,7 @@
 
     // An object mapping XVAR types to private constructors
     var _typeMap = {
+        'XVAR': XVAR,
         'XBOOL': XBOOL,
         'XNUMBER': XNUMBER,
         'XSTRING': XSTRING
