@@ -141,6 +141,187 @@
 
 
 
+    // A generic constructor interface to create XVARs with type, args and update function name
+    var buildARR = function(TYPE, parents, update) {
+        var obj = new _typeMap[TYPE]();
+        obj._makeChildOfParents(parents);
+        obj._update = _typeMap[TYPE]._updates[update];
+
+        // check if any parent is array, and flag the element
+        for (var i = 0; i < parents.length; i++) {
+            if (is(parents[i]._value).type('array')) {
+                obj._matchLevel = 1;
+                break;
+            }
+        }
+
+        obj._matchUpdate();
+        return obj;
+    };
+
+    // Checks if this object has only one wrapped parent
+    var checkConstrainedParenthoodArr = function(obj) {
+        if (obj._parents.length == 1 && obj._parents[0]._type == 'XARRWRAP') {
+            obj._isConstrained = false;
+            obj._wrappedSingleParent = true;
+        }
+    };
+
+
+
+
+
+    var XARRBASE = function(value) {
+        XBASE.call(this, value);
+        this._type = 'XARRBASE';
+
+        this._matchLevel = 0;
+        this._arrLen = 0;
+        this._matchPattern = [];
+
+        // quasi-private methods
+        this._updateChildren = function() {
+            this._children.forEach(function(elem) {
+                if (log) console.log('DEBUG: updating "' + elem._name + '"');
+                // elem._update();
+                elem._matchUpdate();
+                elem._updateChildren();
+            });
+        };
+
+        this._makeChildOfParents = function(parents) {
+            for (var l = parents.length, i = 0; i < l; i++) {
+                var p = parents[i];
+                if (!p._xvar) p = wrapArr(p);  // if parent is not an XVAR, wrap it into one
+                this._parents.push(p);
+                p._children.push(this);
+            }
+            checkConstrainedParenthoodArr(this);
+        };
+
+        this._matchUpdate = function() {
+            console.log('match update for ' + this._value);
+
+            // if parents are arrays
+            if (this._matchLevel) {
+                this._value = [];
+                for (var i = 0; i < this._parents[0]._value.length; i++) {
+                    console.log('match update ' + i);
+                    var slice = this._parentSlice(i);
+                    console.log(slice);
+                    this._value.push(this._update(slice));
+                }
+
+            // if parents are singletons
+            } else {
+                console.log('singleton');
+                var slice = this._parentSlice();
+                console.log(slice);
+                this._value = this._update(slice);
+            }
+        };  	
+
+        // to be overriden
+        this._update = function(parents) {
+            return this._value;
+        };  
+
+        // returns an array with the _value prop of the _parents objs for specified index
+        this._parentSlice = function(index) {
+            var arr = [];
+
+            // if no index passed (singleton parents)
+            if (typeof index === 'undefined') {
+                for (var len = this._parents.length, i = 0; i < len; i++) {
+                    arr.push(this._parents[i]._value);
+                }
+
+            // if array parents 
+            } else {
+                for (var len = this._parents.length, i = 0; i < len; i++) {
+                    arr.push(this._parents[i]._value[index]);
+                }
+            }
+
+            return arr;
+        };
+
+    };
+    XARRBASE.prototype = Object.create(XBASE.prototype);
+    XARRBASE.prototype.constructor = XARRBASE;
+
+
+
+
+    X.array = function(value) {
+        if (arguments.length != 1) {
+            if (log) console.warn('X.js: invalid arguments for X.array()');
+            return undefined;
+        };
+
+        var obj = buildARR('XARRAY', arguments, 'fromValue');
+
+        // if (is(value).type('array')) {
+        //     obj._matchLevel = 1;
+        // }
+
+        return obj
+    };
+
+    X.array.add = function() {
+        return buildARR('XARRAY', arguments, 'add');
+    };
+
+
+
+
+    /**
+     * Main library of update methods for XARRAY objects
+     * @type {Object}
+     */
+    XARRBASE._updates = {
+
+        // NEW: gets passed an array of parent values, no need for _value accessor
+        fromValue: function(parents) {
+            return parents[0];
+        },
+
+        add: function(p) {
+            var sum = p[0];  // also sets initial type
+            for (var i = 1; i < p.length; i++) {
+                sum += p[i];
+            }
+            return sum;
+        }
+
+    }; 
+
+
+
+
+
+    var XARRWRAP = function(value) {
+        XARRBASE.call(this, value);
+        this._type = 'XARRWRAP';
+        this._isConstrained = false;
+    };
+    XARRWRAP.prototype = Object.create(XARRBASE.prototype);
+    XARRWRAP.prototype.constructor = XARRWRAP;
+
+    var wrapArr = function(value){
+        return new XARRWRAP(value);
+    };
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -164,7 +345,6 @@
      */
     var XWRAP = function(value) {
         XBASE.call(this, value);
-        //this._value = value;
         this._type = 'XWRAP';
         this._isConstrained = false;
     };
@@ -940,7 +1120,8 @@
         'XVAR': XVAR,
         'XBOOL': XBOOL,
         'XNUMBER': XNUMBER,
-        'XSTRING': XSTRING
+        'XSTRING': XSTRING,
+        'XARRAY': XARRBASE
     };
 
     /**
