@@ -330,8 +330,6 @@
                 for (var i = 0; i < shortest; i++) {
                     var patt = [];
                     for (var j = 0; j < parentCount; j++) {
-                        // patt.push(i > this._parents[j]._value.length - 1 ? 
-                        //         this._parents[j]._value.length - 1 : i);
                         patt.push(i);
                     }
                     this._matchPattern.push(patt);
@@ -339,6 +337,30 @@
                 return true;
             };
 
+            // a.k.a. cartesian product: http://en.wikipedia.org/wiki/Cartesian_product
+            // adapted from http://stackoverflow.com/a/15310051/1934487
+            if (this._matchPatternType === 'cross-reference') {
+
+                var self = this;  // scope the context
+
+                function recursive(arr, i) {
+                    for (var len = self._parents[i]._value.length, j = 0; j < len; j++) {
+                        var a = arr.slice(0);  // clone array;
+                        a.push(j);
+                        if (i >= parentCount - 1) {
+                            self._matchPattern.push(a);
+                        } else {
+                            recursive(a, i + 1);
+                        }
+                    }
+                }
+
+                recursive([], 0);
+
+                return true;
+            };
+
+            return false;
         };
 
     };

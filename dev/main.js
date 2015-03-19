@@ -163,8 +163,9 @@ console.log(SUM);  // ["A0", "B1", "C2", "D2", "E2"]
 sum.setMatchingPattern('shortest-list');
 console.log(SUM);  // ["A0", "B1", "C2"]
 
+sum.setMatchingPattern('cross-reference');  // aka 'cartesian product'
+console.log(SUM);  // ["A0", "A1", "A2", "B0", "B1", "B2", "C0", "C1", "C2", "D0", "D1", "D2", "E0", "E1", "E2"]
+
 // Data can be of mixed type! With array-like xvars and JS primitives...
 var concat = X.array.add(chars, '-', nums);
 console.log(concat.val);  // ["A-0", "B-1", "C-2", "D-2", "E-2"]
-
-
