@@ -147,13 +147,14 @@
         obj._makeChildOfParents(parents);
         obj._update = _typeMap[TYPE]._updates[update];
 
-        // check if any parent is array, and flag the element
-        for (var i = 0; i < parents.length; i++) {
-            if (is(parents[i]._value).type('array')) {
-                obj._matchLevel = 1;
-                break;
-            }
-        }
+        // // check if any parent is array, and flag the element
+        // for (var i = 0; i < parents.length; i++) {
+        //     if (is(parents[i]._value).type('array')) {
+        //         obj._isArray = true;
+        //         break;
+        //     }
+        // }
+        obj._updateArrayness();
 
         obj._matchUpdate();
         return obj;
@@ -175,16 +176,18 @@
         XBASE.call(this, value);
         this._type = 'XARRBASE';
 
-        this._matchLevel = 0;
-        this._arrLen = 0;
-        this._matchPattern = [];
+        this._isArray = false;
+        this._parentsLengths = [];
+        this._matchPatternType = 'longest-list';  // will add shortest list, cross reference, etc.
+        this._matchPattern = [];  // an array with indices representing the match pattern
 
         // quasi-private methods
         this._updateChildren = function() {
             this._children.forEach(function(elem) {
                 if (log) console.log('DEBUG: updating "' + elem._name + '"');
                 // elem._update();
-                elem._matchUpdate();
+                elem._updateArrayness();
+                elem._matchUpdate();  // includes an improved call to _update()
                 elem._updateChildren();
             });
         };
@@ -199,15 +202,24 @@
             checkConstrainedParenthoodArr(this);
         };
 
+        /**
+         * Discerns if this object's _value is array, and iterates over
+         * the update method accordingly
+         * @return {[type]} [description]
+         */
         this._matchUpdate = function() {
-            console.log('match update for ' + this._value);
+            console.log('_matchUpdate for ' + this._name);
+
+            // it should be checked about here that parents are still arrays
+            // and make wrapping arrangements if necessary
 
             // if parents are arrays
-            if (this._matchLevel) {
+            if (this._isArray) {
                 this._value = [];
-                for (var i = 0; i < this._parents[0]._value.length; i++) {
-                    console.log('match update ' + i);
-                    var slice = this._parentSlice(i);
+                for (var i = 0; i < this._matchPattern.length; i++) {
+                    console.log('match update ' + i + ' with ' + this._matchPattern[i]);
+                    // var slice = this._parentSlice(i);
+                    var slice = this._parentSlice(this._matchPattern[i]);
                     console.log(slice);
                     this._value.push(this._update(slice));
                 }
@@ -219,19 +231,19 @@
                 console.log(slice);
                 this._value = this._update(slice);
             }
-        };  	
+        };      
 
         // to be overriden
         this._update = function(parents) {
             return this._value;
         };  
 
-        // returns an array with the _value prop of the _parents objs for specified index
-        this._parentSlice = function(index) {
+        // returns an array with the _value prop of the _parents objs for specified indexArray (pattern matching)
+        this._parentSlice = function(indexArray) {
             var arr = [];
 
             // if no index passed (singleton parents)
-            if (typeof index === 'undefined') {
+            if (typeof indexArray === 'undefined') {
                 for (var len = this._parents.length, i = 0; i < len; i++) {
                     arr.push(this._parents[i]._value);
                 }
@@ -239,31 +251,153 @@
             // if array parents 
             } else {
                 for (var len = this._parents.length, i = 0; i < len; i++) {
-                    arr.push(this._parents[i]._value[index]);
+                    arr.push(this._parents[i]._value[indexArray[i]]);
                 }
             }
 
             return arr;
         };
 
+        /**
+         * Checks if any parent is an array, and if so, flags this element _value as
+         * array and performs matchpatterning updates
+         * @return {[type]} [description]
+         */
+        this._updateArrayness = function() {
+            if (DEV) console.log('Updating arrayness for ' + this._name);
+
+            // check if any parent is array, and flag the element
+            this._isArray = false;
+            for (var i = 0; i < this._parents.length; i++) {
+                if (is(this._parents[i]._value).type('array')) {
+                    this._isArray = true;
+                    break;
+                }
+            }
+
+            if (!this._isArray) return;  
+
+            // Checks if parents' lengths have remained constant, and otherwise 
+            // updates the matching pattern
+            // @TODO: this assumes all parents are arrays, will need to incorporate
+            //      a wrapping check
+            var lens = [];
+            for (var i = 0; i < this._parents.length; i++) {
+                lens.push(this._parents[i]._value.length);  
+            }
+            if ( !is(lens).deepIdentical(this._parentsLengths) ) {
+                this._parentsLengths = lens;
+                this._updateMatchPattern();
+            }
+        };
+
+        /**
+         * Updates _matchPattern according to parents' lengths and _matchPatternType
+         * @return {[type]} [description]
+         * @TODO how do we account here for array children from single parents? 
+         *      e.g. var arrSin = arr1.sin() 
+         */
+        this._updateMatchPattern = function() {
+            if (DEV) console.log('Updating matchPattern for ' + this._name);
+            var parentCount = this._parents.length;
+            this._matchPattern = [];
+
+            if (this._matchPatternType === 'longest-list') {
+                var longest = 0;
+                for (var i = 0; i < parentCount; i++) {
+                    if (this._parents[i]._value.length > longest) 
+                            longest = this._parents[i]._value.length;
+                };
+
+                for (var i = 0; i < longest; i++) {
+                    var patt = [];
+                    for (var j = 0; j < parentCount; j++) {
+                        patt.push(i > this._parents[j]._value.length - 1 ? 
+                                this._parents[j]._value.length - 1 : i);
+                    }
+                    this._matchPattern.push(patt);
+                };
+                return true;
+            };
+
+            if (this._matchPatternType === 'shortest-list') {
+                var shortest = Number.MAX_VALUE;
+                for (var i = 0; i < parentCount; i++) {
+                    if (this._parents[i]._value.length < shortest) 
+                            shortest = this._parents[i]._value.length;
+                };
+
+                for (var i = 0; i < shortest; i++) {
+                    var patt = [];
+                    for (var j = 0; j < parentCount; j++) {
+                        // patt.push(i > this._parents[j]._value.length - 1 ? 
+                        //         this._parents[j]._value.length - 1 : i);
+                        patt.push(i);
+                    }
+                    this._matchPattern.push(patt);
+                };
+                return true;
+            };
+
+        };
+
     };
     XARRBASE.prototype = Object.create(XBASE.prototype);
     XARRBASE.prototype.constructor = XARRBASE;
+
+    XARRBASE.prototype = {
+        get val() {
+            return this._value;
+        },
+        set val(x) {
+            if (this._isConstrained) {
+                if (log) console.warn('X.js: Sorry, this is constrained');
+            } else {
+                // update for single parented wrapped objects
+                if (this._wrappedSingleParent) {
+                  this._parents[0].val = x;  
+
+                // update for wrapped objects 
+                } else {
+                    this._value = x;  
+                    // this._updateArrayness();
+                    // this._matchUpdate();
+                    this._updateChildren();
+                }
+            }
+        }
+    };
+
+    XARRBASE.prototype.setMatchingPattern = function(matchType) {
+        if (!_matchTypesAvailable[matchType]) {
+            if (log) console.warn('X.js: unrecognized matching pattern type for XARRBASE.setMatchingPattern()');
+            return false;
+        }
+        this._matchPatternType = matchType;
+        this._updateMatchPattern();
+        this._matchUpdate();
+        this._updateChildren();
+        return true;
+    };
+
+    var _matchTypesAvailable = {
+        'longest-list': true,
+        'shortest-list': true,
+        'cross-reference': true
+    };
 
 
 
 
     X.array = function(value) {
+        if (DEV) console.log('Creating XARRAY with value ' + value);
+
         if (arguments.length != 1) {
             if (log) console.warn('X.js: invalid arguments for X.array()');
             return undefined;
         };
 
         var obj = buildARR('XARRAY', arguments, 'fromValue');
-
-        // if (is(value).type('array')) {
-        //     obj._matchLevel = 1;
-        // }
 
         return obj
     };
