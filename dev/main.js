@@ -2,7 +2,7 @@
 // // SETUP //
 // ///////////
 
-X.setLogLevel(0);  // shut up
+// X.setLogLevel(0);  // shut up
 
 // //////////////////////////////////////////////////// //
 // // XBOOLEAN                                          //
@@ -133,39 +133,152 @@ X.setLogLevel(0);  // shut up
 
 
 
-//////////////////////////////////////////////////// // // // // //
-// ARRAYS AND MATCHING PATTERNS                                  //
-///////////////////////////////////////////////////////////////////
-var chars = X.array(['a', 'b', 'c']),
-    nums = X.array([0, 1, 2]);
+// //////////////////////////////////////////////////// // // // // //
+// // ARRAYS AND MATCHING PATTERNS                                  //
+// ///////////////////////////////////////////////////////////////////
+// var chars = X.array(['a', 'b', 'c']),
+//     nums = X.array([0, 1, 2]);
 
-var sum = X.array.add(chars, nums);
+// var sum = X.array.add(chars, nums);
 
-// Adds internal names to objects based on global object search
+// // Adds internal names to objects based on global object search
+// X.tagVars(window);
+
+// // Adds uppercase gsetters to global object
+// X.injectVars(window);
+
+// // FROM HERE ON, UPPERCASE GSETTERS ARE USED!
+// // One to one matching
+// console.log(SUM);  // ["a0", "b1", "c2"]
+
+// // Default matching pattern is 'longest list'
+// CHARS = ['a'];
+// console.log(SUM);  // ["a0", "a1", "a2"]
+
+// // Changes in array lengths propagate to children 
+// CHARS = ['A', 'B', 'C', 'D', 'E'];
+// console.log(SUM);  // ["A0", "B1", "C2", "D2", "E2"]
+
+// // Matching type can be updated:
+// sum.setMatchingPattern('shortest-list');
+// console.log(SUM);  // ["A0", "B1", "C2"]
+
+// sum.setMatchingPattern('cross-reference');  // aka 'cartesian product'
+// console.log(SUM);  // ["A0", "A1", "A2", "B0", "B1", "B2", "C0", "C1", "C2", "D0", "D1", "D2", "E0", "E1", "E2"]
+
+// // Data can be of mixed type! With array-like xvars and JS primitives...
+// var concat = X.array.add(chars, '-', nums);
+// console.log(concat.val);  // ["A-0", "B-1", "C-2", "D-2", "E-2"]
+
+
+
+
+// var foo = X.array([1, 2, 3]),
+// 	bar = X.number([100]);
+
+// var baz =  X.array.add(foo, bar);
+
+// console.log(baz.val);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ███╗   ██╗███████╗██╗    ██╗     █████╗ ██████╗ ██╗
+// ████╗  ██║██╔════╝██║    ██║    ██╔══██╗██╔══██╗██║
+// ██╔██╗ ██║█████╗  ██║ █╗ ██║    ███████║██████╔╝██║
+// ██║╚██╗██║██╔══╝  ██║███╗██║    ██╔══██║██╔═══╝ ██║
+// ██║ ╚████║███████╗╚███╔███╔╝    ██║  ██║██║     ██║
+// ╚═╝  ╚═══╝╚══════╝ ╚══╝╚══╝     ╚═╝  ╚═╝╚═╝     ╚═╝
+
+//////////
+// XVAR //
+//////////
+
+var a = X.var(false),
+	b = X.var(true),
+	c = X.var(0),
+	d = X.var(100),
+	e = X.var('foo'),
+	f = X.var([2, 4]),
+	g = X.var([10, 20]),
+	h = X.var(['a', 'b', 'c']);
+
+var abis = X.var(a),
+	fbis = X.var(f);
+
+var sumCD = X.add(c, d),
+	sumFG = X.add(f, g),
+	sumGH = X.add(g, h);
+	// sumDH = X.add(X.array(d), h);  // doesn't work right away, d needs to be casted to array!
+
+var dArr = X.array(d),
+	sumDARRH = X.add(dArr, h);
+
+var bool = X.bool(c),
+	num = X.num(b),
+	str = X.str(b),
+	arr = X.arr(b);
+
+var srtArr = X.str(g);  // ["10", "20"] rather than "10,20"
+
+
+//////////////////////////////
+// BOOLEAN LOGIC            //
+//////////////////////////////
+// var andAB = X.and(a, b);
+var boolArr1 = X.var([true]),
+	boolArr2 = X.var([true, false]);
+var and1 = X.and(boolArr1, boolArr2);
+
+/**
+ * These are still untested:
+ * 	.or()
+ * 	.equal()
+ * 	.notEqual()
+ * 	.greater()
+ * 	.greaterEqual()
+ * 	.less()
+ * 	.lessEqual()
+ */
+
+
+var nine = X.var([0, 45, 90, 180]);
+
+var rads = nine.toRadians();
+
+var degs = rads.toDegrees();
+
+
+/////////
+// WIP //
+/////////
+
 X.tagVars(window);
-
-// Adds uppercase gsetters to global object
 X.injectVars(window);
 
-// FROM HERE ON, UPPERCASE GSETTERS ARE USED!
-// One to one matching
-console.log(SUM);  // ["a0", "b1", "c2"]
-
-// Default matching pattern is 'longest list'
-CHARS = ['a'];
-console.log(SUM);  // ["a0", "a1", "a2"]
-
-// Changes in array lengths propagate to children 
-CHARS = ['A', 'B', 'C', 'D', 'E'];
-console.log(SUM);  // ["A0", "B1", "C2", "D2", "E2"]
-
-// Matching type can be updated:
-sum.setMatchingPattern('shortest-list');
-console.log(SUM);  // ["A0", "B1", "C2"]
-
-sum.setMatchingPattern('cross-reference');  // aka 'cartesian product'
-console.log(SUM);  // ["A0", "A1", "A2", "B0", "B1", "B2", "C0", "C1", "C2", "D0", "D1", "D2", "E0", "E1", "E2"]
-
-// Data can be of mixed type! With array-like xvars and JS primitives...
-var concat = X.array.add(chars, '-', nums);
-console.log(concat.val);  // ["A-0", "B-1", "C-2", "D-2", "E-2"]

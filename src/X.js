@@ -1,4 +1,3 @@
-
 (function () {
 
     var DEV = true;
@@ -10,6 +9,11 @@
     // ╚██████╗╚██████╔╝██║  ██║███████╗
     //  ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝
 
+    // Some constants
+    var TAU = 2 * Math.PI,              // ;)
+        TO_DEGS = 180 / Math.PI,
+        TO_RADS = Math.PI / 180;
+
     // The object containing the public accessors
     var X = {};
 
@@ -18,31 +22,51 @@
 
     // All created XVARS
     var elements = [];
-    if (DEV) X._elements = elements;  // accessor alias
+    if (DEV) X._elements = elements;  // development accessor alias
 
-    // Set how verbose is X.js
+    // Incremental id assignment
+    var xIndex = 0;
+
+    // Set how verbose X.js is
     var log = 1;
     X.setLogLevel = function(value) {
         if (arguments.length == 0) return log;
         log = value;
     };
 
-    // A generic constructor interface to create XVARs with type, args and update function name
-    var build = function(TYPE, parents, update) {
-        var obj = new _typeMap[TYPE]();
-        obj._makeChildOfParents(parents);
-        obj._update = _typeMap[TYPE]._updates[update];
-        obj._update();
-        return obj;
-    };
 
+
+
+    ////////////////////////
+    // INTERNAL FUNCTIONS //
+    ////////////////////////
+    
     // Checks if this object has only one wrapped parent
     var checkConstrainedParenthood = function(obj) {
         if (obj._parents.length == 1 && obj._parents[0]._type == 'XWRAP') {
             obj._isConstrained = false;
             obj._wrappedSingleParent = true;
         }
+    };    
+
+
+    // A generic constructor interface to create XVARs with type, args and update function name
+    // FORMER buildARR
+    var build = function(TYPE, parents, update) {
+        var obj = new _typeMap[TYPE]();
+        obj._makeChildOfParents(parents);
+        obj._update = _typeMap[TYPE]._updates[update];
+        obj._updateArrayness();
+        obj._matchUpdate();
+        return obj;
     };
+
+
+
+
+
+
+
 
 
 
@@ -58,6 +82,7 @@
      */
     var XBASE = function(value) {
         // quasi-private properties
+        this._id = xIndex++;
         this._value = value;
         this._parents = [];
         this._children = [];
@@ -66,6 +91,12 @@
         this._type = 'XBASE';
         this._isConstrained = true;
         this._wrappedSingleParent = false;
+
+        this._isArray = false;
+        this._parentsLengths = [];
+        this._matchPatternType = 'longest-list';  // will add shortest list, cross reference, etc.
+        this._matchPattern = [];  // an array with indices representing the match pattern
+
 
         /**
          * Contains references to objects representing characteristic properties of
@@ -81,12 +112,14 @@
         // quasi-private methods
         this._updateChildren = function() {
             this._children.forEach(function(elem) {
-                if (log) console.log('DEBUG: updating "' + elem._name + '"');
-                elem._update();
+                if (DEV) console.log('DEBUG: updating "' + elem._name + '"');
+                elem._updateArrayness();
+                elem._matchUpdate();  // includes an improved call to _update()
                 elem._updateChildren();
             });
         };
 
+        // ADAPTED FROM BOTH XBASE AND XBASEARR
         this._makeChildOfParents = function(parents) {
             for (var l = parents.length, i = 0; i < l; i++) {
                 var p = parents[i];
@@ -95,111 +128,6 @@
                 p._children.push(this);
             }
             checkConstrainedParenthood(this);
-        };
-
-        this._update = function() {};  // to be overriden
-
-        /**
-         * Add a new object to a characteristic property of this object
-         * @param  {string} prop
-         * @param  {object} obj
-         * @return {object} the registered object
-         */
-        this._register = function(prop, obj) {
-            this._properties[prop] = obj;
-            return obj;
-        };
-
-    };
-
-    // This has better performance than Object.defineProperties(): http://jsperf.com/getter-setter/7
-    XBASE.prototype = {
-        get val() {
-            return this._value;
-        },
-        set val(x) {
-            if (this._isConstrained) {
-                if (log) console.warn('X.js: Sorry, this is constrained');
-            } else {
-                // update for single parented wrapped objects
-                if (this._wrappedSingleParent) {
-                  this._parents[0].val = x;  
-
-                // update for wrapped objects 
-                } else {
-                    this._value = x;  
-                    this._updateChildren();
-                }
-            }
-        }
-    };
-
-
-
-
-
-
-
-
-    // A generic constructor interface to create XVARs with type, args and update function name
-    var buildARR = function(TYPE, parents, update) {
-        var obj = new _typeMap[TYPE]();
-        obj._makeChildOfParents(parents);
-        obj._update = _typeMap[TYPE]._updates[update];
-
-        // // check if any parent is array, and flag the element
-        // for (var i = 0; i < parents.length; i++) {
-        //     if (is(parents[i]._value).type('array')) {
-        //         obj._isArray = true;
-        //         break;
-        //     }
-        // }
-        obj._updateArrayness();
-
-        obj._matchUpdate();
-        return obj;
-    };
-
-    // Checks if this object has only one wrapped parent
-    var checkConstrainedParenthoodArr = function(obj) {
-        if (obj._parents.length == 1 && obj._parents[0]._type == 'XARRWRAP') {
-            obj._isConstrained = false;
-            obj._wrappedSingleParent = true;
-        }
-    };
-
-
-
-
-
-    var XARRBASE = function(value) {
-        XBASE.call(this, value);
-        this._type = 'XARRBASE';
-
-        this._isArray = false;
-        this._parentsLengths = [];
-        this._matchPatternType = 'longest-list';  // will add shortest list, cross reference, etc.
-        this._matchPattern = [];  // an array with indices representing the match pattern
-
-        // quasi-private methods
-        this._updateChildren = function() {
-            this._children.forEach(function(elem) {
-                if (log) console.log('DEBUG: updating "' + elem._name + '"');
-                // elem._update();
-                elem._updateArrayness();
-                elem._matchUpdate();  // includes an improved call to _update()
-                elem._updateChildren();
-            });
-        };
-
-        this._makeChildOfParents = function(parents) {
-            for (var l = parents.length, i = 0; i < l; i++) {
-                var p = parents[i];
-                if (!p._xvar) p = wrapArr(p);  // if parent is not an XVAR, wrap it into one
-                this._parents.push(p);
-                p._children.push(this);
-            }
-            checkConstrainedParenthoodArr(this);
         };
 
         /**
@@ -218,7 +146,6 @@
                 this._value = [];
                 for (var i = 0; i < this._matchPattern.length; i++) {
                     console.log('match update ' + i + ' with ' + this._matchPattern[i]);
-                    // var slice = this._parentSlice(i);
                     var slice = this._parentSlice(this._matchPattern[i]);
                     console.log(slice);
                     this._value.push(this._update(slice));
@@ -231,14 +158,26 @@
                 console.log(slice);
                 this._value = this._update(slice);
             }
-        };      
+        };    
 
-        // to be overriden
+        // An identity update function to be overriden
         this._update = function(parents) {
             return this._value;
-        };  
+        };
+
+        /**
+         * Add a new object to a characteristic property of this object
+         * @param  {string} prop
+         * @param  {object} obj
+         * @return {object} the registered object
+         */
+        this._register = function(prop, obj) {
+            this._properties[prop] = obj;
+            return obj;
+        };
 
         // returns an array with the _value prop of the _parents objs for specified indexArray (pattern matching)
+        // THIS COULD BECOME A PRIVATE FUNCTION: var valueSlice = function(parents, indexArray) {...}
         this._parentSlice = function(indexArray) {
             var arr = [];
 
@@ -291,6 +230,7 @@
             }
         };
 
+
         /**
          * Updates _matchPattern according to parents' lengths and _matchPatternType
          * @return {[type]} [description]
@@ -340,7 +280,6 @@
             // a.k.a. cartesian product: http://en.wikipedia.org/wiki/Cartesian_product
             // adapted from http://stackoverflow.com/a/15310051/1934487
             if (this._matchPatternType === 'cross-reference') {
-
                 var self = this;  // scope the context
 
                 function recursive(arr, i) {
@@ -364,10 +303,9 @@
         };
 
     };
-    XARRBASE.prototype = Object.create(XBASE.prototype);
-    XARRBASE.prototype.constructor = XARRBASE;
 
-    XARRBASE.prototype = {
+    // This has better performance than Object.defineProperties(): http://jsperf.com/getter-setter/7
+    XBASE.prototype = {
         get val() {
             return this._value;
         },
@@ -382,17 +320,16 @@
                 // update for wrapped objects 
                 } else {
                     this._value = x;  
-                    // this._updateArrayness();
-                    // this._matchUpdate();
                     this._updateChildren();
                 }
             }
         }
     };
 
-    XARRBASE.prototype.setMatchingPattern = function(matchType) {
+
+    XBASE.prototype.setMatchingPattern = function(matchType) {
         if (!_matchTypesAvailable[matchType]) {
-            if (log) console.warn('X.js: unrecognized matching pattern type for XARRBASE.setMatchingPattern()');
+            if (log) console.warn('X.js: unrecognized matching pattern type for XBASE.setMatchingPattern()');
             return false;
         }
         this._matchPatternType = matchType;
@@ -407,78 +344,6 @@
         'shortest-list': true,
         'cross-reference': true
     };
-
-
-
-
-    X.array = function(value) {
-        if (DEV) console.log('Creating XARRAY with value ' + value);
-
-        if (arguments.length != 1) {
-            if (log) console.warn('X.js: invalid arguments for X.array()');
-            return undefined;
-        };
-
-        var obj = buildARR('XARRAY', arguments, 'fromValue');
-
-        return obj
-    };
-
-    X.array.add = function() {
-        return buildARR('XARRAY', arguments, 'add');
-    };
-
-
-
-
-    /**
-     * Main library of update methods for XARRAY objects
-     * @type {Object}
-     */
-    XARRBASE._updates = {
-
-        // NEW: gets passed an array of parent values, no need for _value accessor
-        fromValue: function(parents) {
-            return parents[0];
-        },
-
-        add: function(p) {
-            var sum = p[0];  // also sets initial type
-            for (var i = 1; i < p.length; i++) {
-                sum += p[i];
-            }
-            return sum;
-        }
-
-    }; 
-
-
-
-
-
-    var XARRWRAP = function(value) {
-        XARRBASE.call(this, value);
-        this._type = 'XARRWRAP';
-        this._isConstrained = false;
-    };
-    XARRWRAP.prototype = Object.create(XARRBASE.prototype);
-    XARRWRAP.prototype.constructor = XARRWRAP;
-
-    var wrapArr = function(value){
-        return new XARRWRAP(value);
-    };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -519,6 +384,67 @@
 
 
 
+    /**
+     * Fixing this is postponed for the moment. 
+     * TODO:
+     * - Implement the XARRWRAPer
+     * - Tap into detection of array parents
+     * - Upon first detection of a parent being an array, flag the _areParentsArrays
+     * - Unlink object from parents (and viceversa)
+     * - Draw XARRWRAP children from all parents
+     * - Link those as new parents to target XVAR
+     */
+
+    // // ██╗  ██╗ █████╗ ██████╗ ██████╗ ██╗    ██╗██████╗  █████╗ ██████╗ 
+    // // ╚██╗██╔╝██╔══██╗██╔══██╗██╔══██╗██║    ██║██╔══██╗██╔══██╗██╔══██╗
+    // //  ╚███╔╝ ███████║██████╔╝██████╔╝██║ █╗ ██║██████╔╝███████║██████╔╝
+    // //  ██╔██╗ ██╔══██║██╔══██╗██╔══██╗██║███╗██║██╔══██╗██╔══██║██╔═══╝ 
+    // // ██╔╝ ██╗██║  ██║██║  ██║██║  ██║╚███╔███╔╝██║  ██║██║  ██║██║     
+    // // ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     
+
+    // /**
+    //  * An object wrapper to interface between a parent whose value maybe non/array
+    //  * and a child that needs array parents. Tries to solve the problem of a nonarray
+    //  * parent turning into one (and viceversa). 
+    //  * @param {XVAR} value
+    //  */
+    // var XARRWRAP = function(value) {
+    //     XBASE.call(this, value);
+    //     this._type = 'XARRWRAP';
+    //     this._isConstrained = false;
+
+    //     this._update = function() {
+    //         if (typeof this._parents[0].value === '[object Array]') {
+    //             return this._parents[0].value;
+    //         }
+    //         return [this._parents[0].value];
+    //     }
+    // };
+
+    // var buildArrayChild = function(parent) {
+    //     // var obj = new XARRWRAP();
+    //     // obj._makeChildOfParents(parent);
+    //     // // obj._update = _typeMap[TYPE]._updates[update];
+    //     // obj._updateArrayness();
+    //     // obj._matchUpdate();
+    //     // return obj;
+    //     return buils('XARRWRAP', parent, 'fromParent');
+    // };
+
+    // XARRWRAP._updates = {
+    //     fromParent: function(pv) {
+    //         // if (typeof pv[0] === '[object Array]') {
+    //         if (this._isArray) {  // if parent is array
+    //             return pv[0];
+    //         }
+    //         return [pv[0]];  // otherwise turn value into singleton array
+    //     }
+    // };
+
+
+
+
+
 
 
 
@@ -537,312 +463,11 @@
     XVAR.prototype = Object.create(XBASE.prototype);
     XVAR.prototype.constructor = XVAR;
 
-
-
-    X.xvar = function(value) {
-        if (arguments.length != 1) {
-            if (log) console.warn('X.js: invalid arguments for X.xvar()');
-            return undefined;
-        };
-
-        return build('XVAR', arguments, 'fromValue');
-    };
-
-    X.xvar.compose = function() {
-        var a = arguments, len = a.length;
-
-        if (len < 2) {
-            if (log) console.warn('X.js: invalid arguments for X.xvar.compose()');
-            return undefined;
-        };
-
-        var callback = a[len - 1];
-        if ( is(callback).notType('function') ) {
-            if (log) console.warn('X.js: last argument must be a function for X.xvar.compose()');
-            return undefined;
-        };
-
-        var parents = [callback];
-        // parents.push(this);  // store current context as parent?
-        for (var i = 0; i < len - 1; i++) {
-            parents.push(a[i]);
-        }
-
-        return build('XVAR', parents, 'compose');
-    };
-
-
-
-    /**
-     * Main library of update methods for XVAR objects
-     * @type {Object}
-     */
-    XVAR._updates = {
-
-        fromValue: function() {
-            this._value = this._parents[0]._value;  // retrieve from wrapped parent
-        },
-
-        compose: function() {
-            // Call the update callback on the context it was created with scoped vars.
-            // Instead of using the global context, would it be better to store it as parent
-            // when object is composed?
-            this._value = this._parents[0]._value.apply(context, this._parents.slice(1));
-        }
-
-    };
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // ██╗  ██╗██████╗  ██████╗  ██████╗ ██╗     
-    // ╚██╗██╔╝██╔══██╗██╔═══██╗██╔═══██╗██║     
-    //  ╚███╔╝ ██████╔╝██║   ██║██║   ██║██║     
-    //  ██╔██╗ ██╔══██╗██║   ██║██║   ██║██║     
-    // ██╔╝ ██╗██████╔╝╚██████╔╝╚██████╔╝███████╗
-    // ╚═╝  ╚═╝╚═════╝  ╚═════╝  ╚═════╝ ╚══════╝
-
-    var XBOOL = function(value) {
-        var init = Boolean(value);  // Hard casting of input arg, true to JS default behaviors. If no arg is passed, will default to false.
-        XBASE.call(this, init);
-        this._type = 'XBOOL';
-    };
-    XBOOL.prototype = Object.create(XBASE.prototype);
-    XBOOL.prototype.constructor = XBOOL;
-
-    // Prototype methods
-    XBOOL.prototype.not = function() {
-        return this._properties['not'] ? 
-                this._properties['not'] :
-                this._register('not', build('XBOOL', [this], 'not'));
-    };
-
-    /**
-     * Main factory constructor from simple input value
-     * @param {object}
-     * @return {XBOOL}
-     */
-    X.bool = function() {
-        if (arguments.length != 1) {
-            if (log) console.warn('X.js: invalid arguments for X.bool()');
-            return undefined;
-        };
-
-        return build('XBOOL', arguments, 'fromValue');
-    };
-    X.boolean = X.bool;  // an alias
-
-    /**
-     * Returns simple chained && of objects' "truthiness" 
-     * @param  {...object} arguments
-     * @return {XBOOL}
-     */
-    X.bool.and = function() {
-        return build('XBOOL', arguments, 'and');
-    };
-
-    /**
-     * Returns simple chained && of objects' "truthiness" 
-     * @param  {...object} arguments
-     * @return {XBOOL}
-     */
-    X.bool.or = function() {
-        return build('XBOOL', arguments, 'or');
-    };
-
-    /**
-     * Returns true if all operands are equal to each other via native '=='
-     * @param {...object} arguments
-     * @return {XBOOL}
-     */
-    X.bool.equal = function() {
-        if (arguments.length < 2) {
-            if (log) console.warn('X.js: Must pass at least two arguments to X.bool.equal()');
-            return undefined;
-        }
-        return build('XBOOL', arguments, 'equal');
-    };
-
-    /**
-     * Returns true if all operands are not equal to each other via native '!='
-     * @param {...object} arguments     
-     * @return {XBOOL}
-     */
-    X.bool.notEqual = function() {
-        if (arguments.length < 2) {
-            if (log) console.warn('X.js: Must pass at least two arguments to X.bool.notEqual()');
-            return undefined;
-        }
-        return build('XBOOL', arguments, 'notEqual');
-    };
-
-    /**
-     * Implements simple 'A > B' 
-     * @return {XBOOL}
-     */
-    X.bool.greater = function(A, B) {
-        if (arguments.length != 2) {
-            if (log) console.warn('X.js: Must pass exactly two arguments to X.bool.greater()');
-            return undefined;
-        }
-        return build('XBOOL', arguments, 'greater');
-    };
-
-    /**
-     * Implements simple 'A >= B' 
-     * @return {XBOOL} 
-     */
-    X.bool.greaterEqual = function(A, B) {
-        if (arguments.length != 2) {
-            if (log) console.warn('X.js: Must pass exactly two arguments to X.bool.greaterEqual()');
-            return undefined;
-        }
-        return build('XBOOL', arguments, 'greaterEqual');
-    };
-
-    /**
-     * Implements simple 'A < B' 
-     * @param  {object} A
-     * @param  {object} B
-     * @return {XBOOL}
-     */
-    X.bool.less = function(A, B) {
-        if (arguments.length != 2) {
-            if (log) console.warn('X.js: Must pass exactly two arguments to X.bool.less()');
-            return undefined;
-        }
-        return build('XBOOL', arguments, 'less');
-    };
-
-    /**
-     * Implements simple 'A <= B' 
-     * @param  {object} A
-     * @param  {object} B
-     * @return {XBOOL}
-     */
-    X.bool.lessEqual = function(A, B) {
-        if (arguments.length != 2) {
-            if (log) console.warn('X.js: Must pass exactly two arguments to X.bool.lessEqual()');
-            return undefined;
-        }
-        return build('XBOOL', arguments, 'lessEqual');
-    };
-
-
-    /**
-     * Main library of update methods for XBOOL objects
-     * @type {Object}
-     */
-    XBOOL._updates = {
-
-        fromValue: function() {
-            this._value = this._parents[0]._value;  // retrieve from wrapped parent
-        },
-
-        not: function() {
-            this._value = !this._parents[0]._value;
-        },
-
-        and: function() {
-            for (var len = this._parents.length, i = 0; i < len; i++) {
-                if (!this._parents[i]._value) {
-                    this._value = false;
-                    return;
-                }
-            }
-            this._value = true;
-        },
-
-        or: function() {
-            for (var len = this._parents.length, i = 0; i < len; i++) {
-                if (this._parents[i]._value) {
-                    this._value = true;
-                    return;
-                }
-            }
-            this._value = false;
-        },
-
-        equal: function() {
-            for (var len = this._parents.length - 1, i = 0; i < len; i++) {
-                if (this._parents[i]._value != this._parents[i+1]._value) {
-                    this._value = false;
-                    return;
-                }
-            }
-            this._value = true;
-        },
-
-        notEqual: function() {
-            // pyramidal match without self-check 
-            for (var len = this._parents.length, i = 0; i < len - 1; i++) {
-                for (var j = i + 1; j < len; j++) {
-                    if (this._parents[i]._value == this._parents[j]._value) {
-                        this._value = false;
-                        return;
-                    }
-                }
-            }
-            this._value = true;
-        },
-
-        greater: function() {
-            this._value = this._parents[0]._value > this._parents[1]._value;
-        },
-
-        greaterEqual: function() {
-            this._value = this._parents[0]._value >= this._parents[1]._value;
-        },
-
-        less: function() {
-            this._value = this._parents[0]._value < this._parents[1]._value;
-        },
-
-        lessEqual: function() {
-            this._value = this._parents[0]._value <= this._parents[1]._value;
-        }
-    };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // ██╗  ██╗███╗   ██╗██╗   ██╗███╗   ███╗██████╗ ███████╗██████╗ 
-    // ╚██╗██╔╝████╗  ██║██║   ██║████╗ ████║██╔══██╗██╔════╝██╔══██╗
-    //  ╚███╔╝ ██╔██╗ ██║██║   ██║██╔████╔██║██████╔╝█████╗  ██████╔╝
-    //  ██╔██╗ ██║╚██╗██║██║   ██║██║╚██╔╝██║██╔══██╗██╔══╝  ██╔══██╗
-    // ██╔╝ ██╗██║ ╚████║╚██████╔╝██║ ╚═╝ ██║██████╔╝███████╗██║  ██║
-    // ╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝     ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝
-
-    var XNUMBER = function(value) {
-        var init = Number(value);  // Hard casting of input arg, true to JS default behaviors. If no arg is passed, will default to NaN.
-        XBASE.call(this, init);
-        this._type = 'XNUMBER';
-    };
-    XNUMBER.prototype = Object.create(XBASE.prototype);
-    XNUMBER.prototype.constructor = XNUMBER;
-
-    var XNUMBER_METHODS = [
+    //////////////////////////////////////////////////
+    // AUTO GENERATION OF CHARACTERISTIC PROTOTYPES //
+    //////////////////////////////////////////////////
+    var XVARProtos = [
+        'not',
         'half',
         'double',
         'abs',
@@ -854,98 +479,260 @@
         'floor',
         'ceil',
         'toDegrees',
-        'toRadians'
+        'toRadians',
+        'toLowerCase',
+        'toUpperCase'
     ];
 
-    XNUMBER_METHODS.forEach(function(prop) {
-        XNUMBER.prototype[prop] = function() {
-            return this._properties[prop] ?
+    XVARProtos.forEach(function(prop) {
+        XVAR.prototype[prop] = function() {
+            return typeof this._properties[prop] !== 'undefined' ?
                     this._properties[prop] :
-                    this._register(prop, build('XNUMBER', [this], prop));
+                    this._register(prop, build('XVAR', [this], prop));
         };
     })
 
 
-    /**
-     * Main factory constructor from simple input value
-     * @return {XNUMBER}
-     */
-    X.number = function() {
+    //////////////////////
+    // BASE CONSTRUCTOR //
+    //////////////////////
+
+    X.var = function(value) {
         if (arguments.length != 1) {
-            if (log) console.warn('X.js: invalid arguments for X.number()');
+            if (log) console.warn('X.js: Invalid arguments for X.var()');
             return undefined;
         };
 
-        return build('XNUMBER', arguments, 'fromValue');
+        return build('XVAR', arguments, 'fromValue');
     };
-    X.num = X.number;  // an alias
 
 
-    X.number.add = function() {
+    ///////////////////////
+    // CASTING FUNCTIONS //
+    ///////////////////////
+
+    X.boolean = X.bool = function(value) {
+        if (arguments.length != 1) {
+            if (log) console.warn('X.js: Invalid arguments for X.boolean()');
+            return undefined;
+        };
+
+        return build('XVAR', arguments, 'boolean');
+    };
+
+    X.number = X.num = function(value) {
+        if (arguments.length != 1) {
+            if (log) console.warn('X.js: Invalid arguments for X.number()');
+            return undefined;
+        };
+
+        return build('XVAR', arguments, 'number');
+    };
+
+    X.string = X.str = function(value) {
+        if (arguments.length != 1) {
+            if (log) console.warn('X.js: Invalid arguments for X.string()');
+            return undefined;
+        };
+
+        return build('XVAR', arguments, 'string');
+    };
+
+    // Could be expanded to accept many arguments, and create an array with their values...
+    X.array = X.arr = function() {
+        if (arguments.length != 1) {
+            if (log) console.warn('X.js: Invalid arguments for X.array()');
+            return undefined;
+        };
+
+        return build('XVAR', arguments, 'array');
+    };
+
+
+    ///////////////////
+    // BOOLEAN LOGIC //
+    ///////////////////
+
+    /**
+     * Returns simple chained && of objects' "truthiness" 
+     * @param  {...Object} arguments
+     * @return {XVAR}
+     */
+    X.and = function() {
+        if (arguments.length == 0) {
+            if (log) console.warn('X.js: Invalid arguments for X.and()');
+            return undefined;
+        };
+        return build('XVAR', arguments, 'and');
+    }; 
+
+    /**
+     * Returns simple chained || of objects' "truthiness" 
+     * @param  {...Object} arguments
+     * @return {XVAR}
+     */
+    X.or = function() {
+        if (arguments.length == 0) {
+            if (log) console.warn('X.js: Invalid arguments for X.or()');
+            return undefined;
+        };
+        return build('XVAR', arguments, 'or');
+    }; 
+
+    /**
+     * Returns true if all operands are equal to each other via native '==',
+     * i.e. there are no two different '!=' objects
+     * @param {...Object} arguments
+     * @return {XVAR}
+     */
+    X.equal = function() {
         if (arguments.length < 2) {
-            if (log) console.log("X.js: Invalid arguments for X.number.add()");
+            if (log) console.warn('X.js: Must pass at least two arguments to X.equal()');
             return undefined;
         }
-        return build('XNUMBER', arguments, 'add');
+        return build('XVAR', arguments, 'equal');
     };
 
-    X.number.subtract = function(A, B) {
-        if (arguments.length != 2) {
-            if (log) console.log("X.js: Invalid arguments for X.number.subtract()");
-            return undefined;
-        }
-        return build('XNUMBER', arguments, 'subtract');
-    };
-
-    X.number.multiply = function() {
+    /**
+     * Returns true if ALL OPERANDS are not equal to each other via native '!=',
+     * i.e. there are no two equal '==' objects
+     * @param {...Object} arguments     
+     * @return {XVAR}
+     */
+    X.notEqual = function() {
         if (arguments.length < 2) {
-            if (log) console.log("X.js: Invalid arguments for X.number.multiply()");
+            if (log) console.warn('X.js: Must pass at least two arguments to X.notEqual()');
             return undefined;
         }
-        return build('XNUMBER', arguments, 'multiply');
+        return build('XVAR', arguments, 'notEqual');
     };
 
-    X.number.divide = function(A, B) {
+    /**
+     * Implements simple 'A > B' 
+     * @return {XVAR}
+     */
+    X.greater = function(A, B) {
         if (arguments.length != 2) {
-            if (log) console.log("X.js: Invalid arguments for X.number.divide()");
+            if (log) console.warn('X.js: Must pass exactly two arguments to X.greater()');
             return undefined;
         }
-        return build('XNUMBER', arguments, 'divide');
+        return build('XVAR', arguments, 'greater');
     };
 
-    X.number.modulo = function(A, B) {
+    /**
+     * Implements simple 'A >= B' 
+     * @return {XVAR} 
+     */
+    X.greaterEqual = function(A, B) {
         if (arguments.length != 2) {
-            if (log) console.log("X.js: Invalid arguments for X.number.modulo()");
+            if (log) console.warn('X.js: Must pass exactly two arguments to X.greaterEqual()');
             return undefined;
         }
-        return build('XNUMBER', arguments, 'modulo');
+        return build('XVAR', arguments, 'greaterEqual');
     };
 
-    X.number.pow = function(A, B) {
+    /**
+     * Implements simple 'A < B' 
+     * @return {XVAR}
+     */
+    X.less = function(A, B) {
         if (arguments.length != 2) {
-            if (log) console.log("X.js: Invalid arguments for X.number.pow()");
+            if (log) console.warn('X.js: Must pass exactly two arguments to X.less()');
             return undefined;
         }
-        return build('XNUMBER', arguments, 'pow');
+        return build('XVAR', arguments, 'less');
     };
 
-    X.number.atan2 = function(Y, X) {
+    /**
+     * Implements simple 'A <= B' 
+     * @return {XVAR}
+     */
+    X.lessEqual = function(A, B) {
         if (arguments.length != 2) {
-            if (log) console.log("X.js: Invalid arguments for X.number.atan2()");
+            if (log) console.warn('X.js: Must pass exactly two arguments to X.lessEqual()');
             return undefined;
         }
-        return build('XNUMBER', arguments, 'atan2');
+        return build('XVAR', arguments, 'lessEqual');
+    };
+
+
+    //////////////////////////
+    // ARITHMETIC FUNCTIONS //
+    //////////////////////////
+
+    X.add = function() {
+        if (arguments.length == 0) {
+            if (log) console.warn('X.js: Invalid arguments for X.add()');
+            return undefined;
+        };
+        return build('XVAR', arguments, 'add');
+    };
+
+    X.subtract = X.diff = function(A, B) {
+        if (arguments.length != 2) {
+            if (log) console.log("X.js: Invalid arguments for X.subtract()");
+            return undefined;
+        }
+        return build('XVAR', arguments, 'subtract');
+    };
+
+    X.multiply = function() {
+        if (arguments.length < 2) {
+            if (log) console.log("X.js: Invalid arguments for X.multiply()");
+            return undefined;
+        }
+        return build('XVAR', arguments, 'multiply');
+    };
+
+    X.divide = function(A, B) {
+        if (arguments.length != 2) {
+            if (log) console.log("X.js: Invalid arguments for X.divide()");
+            return undefined;
+        }
+        return build('XVAR', arguments, 'divide');
+    };
+
+    X.modulo = function(A, B) {
+        if (arguments.length != 2) {
+            if (log) console.log("X.js: Invalid arguments for X.modulo()");
+            return undefined;
+        }
+        return build('XVAR', arguments, 'modulo');
+    };
+
+    X.pow = function(A, B) {
+        if (arguments.length != 2) {
+            if (log) console.log("X.js: Invalid arguments for X.pow()");
+            return undefined;
+        }
+        return build('XVAR', arguments, 'pow');
+    };
+
+    X.atan2 = function(Y, X) {
+        if (arguments.length != 2) {
+            if (log) console.log("X.js: Invalid arguments for X.atan2()");
+            return undefined;
+        }
+        return build('XVAR', arguments, 'atan2');
     };
 
     /**
      * Create a pseudo-random number generator with associative limits, 
-     * binding a .next() method to trigger random update.
-     * Influenced by C#'s Random Class
-     * @param  {object} min lower limit (optional)
-     * @param  {object} max upper limit (optional)
-     * @return {XNUMBER}
+     * binding a .next() method to trigger random update. 
+     * Accepts the forms:
+     *     .random()            // from 0 to 1
+     *     .random(max)         // from 0 to max
+     *     .random(min, max)    // from min to max
+     *     
+     * @see https://msdn.microsoft.com/en-us/library/system.random
+     * @return {XVAR}
      */
-    X.number.random = function(lim0, lim1) {
+    X.random = function(lim0, lim1) {
+        if (arguments.length > 2) {
+            if (log) console.log("X.js: Invalid arguments for X.random()");
+            return undefined;
+        }
+
         var min, max;
         if (typeof lim1 === 'undefined') {
             min = 0;
@@ -956,300 +743,221 @@
         }
 
         // Create the object and bind a .next() method to get new values
-        var ran = build('XNUMBER', [Math.random(), min, max], 'random');
-        ran['next'] = XNUMBER._updates.randomNext;
+        var ran = build('XVAR', [Math.random(), min, max], 'random');
+        ran['next'] = randomNext;
 
         return ran;
     };
 
+    // @TODO: must adapt this to work with arrays (and not do the same seed for all elements...)
+    var randomNext = function() {
+        // Uses parent setter to generate a new normalized random value (and trigger updates)
+        this._parents[0].val = Math.random();
+    };
+
+
 
 
 
     /**
-     * Main library of update methods for XNUMBER objects
+     * Main library of update methods for XVAR objects
+     * UPDATE: all functions get passed an array of PARENT VALUES, and
+     * must return the updated value. This was done so to allow for 
+     * multiple calls to the update function between elements in 
+     * array-like parents. 
      * @type {Object}
      */
-    XNUMBER._updates = {
+    XVAR._updates = {
 
-        fromValue: function() {
-            this._value = this._parents[0]._value;  // retrieve from wrapped parent
+        fromValue: function(p) {
+            return p[0];  // retrieve from xvar/xwrapped parent
         },
 
 
-        half: function() {
-            this._value = this._parents[0]._value / 2;
+        ///////////////////////
+        // CASTING FUNCTIONS //
+        ///////////////////////
+
+        boolean: function(p) {
+            return Boolean(p[0]);
         },
 
-        double: function() {
-            this._value = 2 * this._parents[0]._value;
+        number: function(p) {
+            return Number(p[0]);
         },
 
-        abs: function() {
-            this._value = Math.abs(this._parents[0]._value);
+        string: function(p) {
+            return String(p[0]);
         },
 
-        sqrt: function() {
-            this._value = Math.sqrt(this._parents[0]._value);
+        array: function(p) {
+            return [p[0]];
+        },
+
+        ////////////////////
+        // BOOLEAN LOGIC  //
+        ////////////////////
+
+        not: function(p) {
+            return !p[0];
+        },
+
+        and: function(p) {
+            for (var i = 0; i < p.length; i++) {
+                if (!p[i]) return false;
+            }
+            return true;
+        },
+
+        or: function(p) {
+            for (var i = 0; i < p.length; i++) {
+                if (p[i]) return true;
+            }
+            return false;
+        },
+
+        equal: function(p) {
+            for (var l = p.length - 1, i = 0; i < l; i++) {
+                if (p[i] != p[i + 1]) return false;
+            }
+            return true;
+        },
+
+        notEqual: function() {
+            for (var l = p.length, i = 0; i < l - 1; i++) {  // pyramidal comparison without self-check 
+                for (var j = i + 1; j < l; j++) {
+                    if (p[i] == p[j]) return false;
+                }
+            }
+            return true;
+        },
+
+        greater: function(p) {
+            return p[0] > p[1];
+        },
+
+        greaterEqual: function(p) {
+            return p[0] >= p[1];
+        },
+
+        less: function(p) {
+            return p[0] < p[1];
+        },
+
+        lessEqual: function() {
+            return p[0] <= p[1];
+        },
+
+
+        //////////////////////////
+        // ARITHMETIC FUNCTIONS //
+        //////////////////////////
+
+        half: function(p) {
+            return 2 * p[0];
+        },
+
+        double: function(p) {
+            return 0.5 * p[0];
+        },
+
+        abs: function(p) {
+            return Math.abs(p[0]);
+        },
+
+        sqrt: function(p) {
+            return Math.sqrt(p[0]);
         },
 
         sin: function() {
-            this._value = Math.sin(this._parents[0]._value);
+            return Math.sin(p[0]);
         },
 
-        cos: function() {
-            this._value = Math.cos(this._parents[0]._value);
+        cos: function(p) {
+            return Math.cos(p[0]);
         },
 
-        tan: function() {
-            this._value = Math.tan(this._parents[0]._value);
+        tan: function(p) {
+            return Math.tan(p[0]);
         },
 
-        round: function() {
-            this._value = Math.round(this._parents[0]._value);
+        round: function(p) {
+            return Math.round(p[0]);
         },
 
-        floor: function() {
-            this._value = Math.floor(this._parents[0]._value);
+        floor: function(p) {
+            return Math.floor(p[0]);
         },
 
-        ceil: function() {
-            this._value = Math.ceil(this._parents[0]._value);
+        ceil: function(p) {
+            return Math.ceil(p[0]);
         },
 
-        toDegrees: function() {
-            this._value = this._parents[0]._value * 180 / Math.PI;
+        toDegrees: function(p) {
+            return TO_DEGS * p[0];
         },
 
-        toRadians: function() {
-            this._value = this._parents[0]._value * Math.PI / 180;
+        toRadians: function(p) {
+            return TO_RADS * p[0];
         },
 
-
-        add: function() {
-            this._value = 0;
-            for (var len = this._parents.length, i = 0; i < len; i++) {
-                this._value += this._parents[i]._value;
+        add: function(p) {
+            var sum = p[0];  // also sets initial type
+            for (var i = 1; i < p.length; i++) {
+                sum += p[i];
             }
+            return sum;
         },
 
-        subtract: function() {
-            this._value = this._parents[0]._value - this._parents[1]._value;
+        subtract: function(p) {
+            return p[0] - p[1];
         },
 
-        multiply: function() {
-            this._value = this._parents[0]._value;
-            for (var len = this._parents.length, i = 1; i < len; i++) {
-                this._value *= this._parents[i]._value;
+        multiply: function(p) {
+            var mul = p[0];
+            for (var l = p.length, i = 1; i < l; i++) {
+                mul *= p[i];
             }
+            return mul;
         },
 
-        divide: function() {
-            this._value = this._parents[0]._value / this._parents[1]._value;
+        divide: function(p) {
+            return p[0] / p[1];
         },
 
-        modulo: function() {
-            this._value = this._parents[0]._value % this._parents[1]._value;
+        modulo: function(p) {
+            return p[0] % p[1];
         },
 
-        pow: function() {
-            this._value = Math.pow(this._parents[0]._value, this._parents[1]._value);
+        pow: function(p) {
+            return Math.pow(p[0], p[1]);
         },
 
-        atan2: function() {
-            this._value = Math.atan2(this._parents[0]._value, this._parents[1]._value);  // inputs were in the form (Y, X)
+        atan2: function(p) {
+            return Math.atan2(p[0], p[1]);  // inputs were in the form (Y, X)
         },
 
-        random: function() {
-            // Updates the value without changing the random parameter. See 'randomNext'
-            this._value = this._parents[0]._value * (this._parents[2]._value - this._parents[1]._value)
-                    + this._parents[1]._value;
+        random: function(p) {
+            // Updates the value without changing the random parameter. See 'randomNext'.
+            return p[0] * (p[2] - p[1]) + p[1];
         },
 
-        randomNext: function() {
-            // Uses parent setter to generate a new normalized random value (and trigger updates)
-            this._parents[0].val = Math.random();
+
+        //////////////////////
+        // STRING FUNCTIONS //
+        //////////////////////
+
+        toLowerCase: function(p) {
+            // Parent may not be a string
+            return p[0].toLowerCase ? p[0].toLowerCase() : p[0];
+        },
+
+        toUpperCase: function(p) {
+            // Parent may not be a string
+            return p[0].toUpperCase ? p[0].toUpperCase() : p[0];
         }
 
     };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // ██╗  ██╗███████╗████████╗██████╗ ██╗███╗   ██╗ ██████╗ 
-    // ╚██╗██╔╝██╔════╝╚══██╔══╝██╔══██╗██║████╗  ██║██╔════╝ 
-    //  ╚███╔╝ ███████╗   ██║   ██████╔╝██║██╔██╗ ██║██║  ███╗
-    //  ██╔██╗ ╚════██║   ██║   ██╔══██╗██║██║╚██╗██║██║   ██║
-    // ██╔╝ ██╗███████║   ██║   ██║  ██║██║██║ ╚████║╚██████╔╝
-    // ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝ ╚═════╝ 
-
-    var XSTRING = function(value) {
-        var init = String(value);  // Hard casting of input arg, true to JS default behaviors. If no arg is passed, will default to "undefined".
-        XBASE.call(this, init);
-        this._type = 'XSTRING';
-    };
-    XSTRING.prototype = Object.create(XBASE.prototype);
-    XSTRING.prototype.constructor = XSTRING;
-
-    var XSTRING_METHODS = [
-        'toLowerCase',
-        'toUpperCase'
-    ];
-
-    XSTRING_METHODS.forEach(function(prop) {
-        XSTRING.prototype[prop] = function() {
-            return this._properties[prop] ?
-                    this._properties[prop] :
-                    this._register(prop, build('XSTRING', [this], prop));
-        };
-    });
-
-    XSTRING.prototype.slice = function(start, end) {
-        if (arguments.length < 1 || arguments.length > 2) {
-            if (log) console.warn('X.js: invalid arguments for XSTRING.slice()');
-            return undefined;
-        };
-
-        var args = [this];
-        for (var i = 0; i < arguments.length; i++) {
-            args.push(arguments[i]);
-        }
-
-        return build('XSTRING', args, 'slice');
-    };
-
-    XSTRING.prototype.charAt = function(position) {
-        if (arguments.length != 1) {
-            if (log) console.warn('X.js: invalid arguments for XSTRING.charAt()');
-            return undefined;
-        };
-
-        return build('XSTRING', [this, position], 'charAt');
-    };
-
-    XSTRING.prototype.replace = function(subStr, newSubStr) {
-        if (arguments.length != 2) {
-            if (log) console.warn('X.js: invalid arguments for XSTRING.replace()');
-            return undefined;
-        };
-
-        return build('XSTRING', [this, subStr, newSubStr], 'replace');
-    };
-
-
-
-    /**
-     * Main factory constructor from simple input value
-     * @return {XNUMBER}
-     */
-    X.string = function() {
-        if (arguments.length != 1) {
-            if (log) console.warn('X.js: invalid arguments for X.string()');
-            return undefined;
-        };
-
-        return build('XSTRING', arguments, 'fromValue');
-    };
-    X.str = X.string;  // an alias
-
-
-    X.string.concat = function() {
-        return build('XSTRING', arguments, 'concat');
-    };
-
-
-
-
-    /**
-     * Main library of update methods for XSTRING objects
-     * @type {object}
-     */
-    XSTRING._updates = {
-
-        fromValue: function() {
-            this._value = this._parents[0]._value;  // retrieve from wrapped parent
-        },
-
-
-        toLowerCase: function() {
-            this._value = this._parents[0]._value.toLowerCase();
-        },
-
-        toUpperCase: function() {
-            this._value = this._parents[0]._value.toUpperCase();
-        },
-
-        slice: function() {
-            this._value = this._parents[0]._value.slice(this._parents[1]._value, 
-                    this._parents[2] ? this._parents[2]._value : undefined);
-        },
-
-        charAt: function() {
-            this._value = this._parents[0]._value.charAt(this._parents[1]._value);       
-        },
-
-        replace: function() {
-            this._value = this._parents[0]._value.replace(this._parents[1]._value, this._parents[2]._value);
-        },
-
-
-        concat: function() {
-            this._value = "";
-            for (var len = this._parents.length, i = 0; i < len; i++) {
-                this._value += this._parents[i]._value;
-            }
-        }
-
-    };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1273,11 +981,14 @@
 
     // An object mapping XVAR types to private constructors
     var _typeMap = {
-        'XVAR': XVAR,
-        'XBOOL': XBOOL,
-        'XNUMBER': XNUMBER,
-        'XSTRING': XSTRING,
-        'XARRAY': XARRBASE
+        'XWRAP'   : XWRAP,
+        'XVAR'    : XVAR,
+        // 'XARRWRAP': XARRWRAP
+
+        // 'XBOOL': XBOOL,
+        // 'XNUMBER': XNUMBER,
+        // 'XSTRING': XSTRING,
+        // 'XARRAY': XARRBASE
     };
 
     /**
@@ -1337,14 +1048,6 @@
 
 
 
-
-
-
-
-
-
-
-    
     // ███████╗██╗  ██╗██████╗  ██████╗ ██████╗ ████████╗
     // ██╔════╝╚██╗██╔╝██╔══██╗██╔═══██╗██╔══██╗╚══██╔══╝
     // █████╗   ╚███╔╝ ██████╔╝██║   ██║██████╔╝   ██║   
@@ -1365,6 +1068,3 @@
     
 
 }());  // as per Crockford's
-
-
-
