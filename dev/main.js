@@ -269,16 +269,57 @@ var and1 = X.and(boolArr1, boolArr2);
 
 
 var nine = X.var([0, 45, 90, 180]);
-
 var rads = nine.toRadians();
-
 var degs = rads.toDegrees();
+
+var u = X.var(1000),
+	uarr = X._wrapArr(u);
+
+
+var abc = X.var('abcdefghijklmnopqrstuvwxyz');
+var len = abc.length();
+var begin = X.var(3),
+    end = X.var(10);
+var sl1 = abc.slice(),
+    sl2 = abc.slice(begin),
+    sl3 = abc.slice(begin, end);
+
+var chr = abc.charAt(end);
+
+var match = X.var('abcd');
+var rep = abc.replace(match, 'hello world!');
+
+
+
+var ser1 = X.series(end, 0, begin);
+var ran1 = X.range(begin, 0, end);
+
+
+
+var ran1 = X.random(),
+    ran2 = X.random(begin),
+    ran3 = X.random(-10, begin);
+
+
+var u = X.var(2),
+    v = X.var(3),
+    w = X.var(4);
+
+var comp = X.compose(u, v, w, function(parents) {
+    return parents[0] * parents[1] + 10 * parents[2];
+});
+
+var comp2 = X.compose(f, g, function(parents) {
+    return parents[0] + parents[1];
+});
 
 
 /////////
 // WIP //
 /////////
 
-X.tagVars(window);
+// X.tagVars(window);  // included in .injectVars()
 X.injectVars(window);
+
+
 
