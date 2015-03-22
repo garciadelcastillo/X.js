@@ -723,7 +723,7 @@
      * @param {...Object} arguments     
      * @return {XVAR}
      */
-    X.notEqual = function() {
+    X.notEqual = X.different = function() {
         if (arguments.length < 2) {
             if (log) console.warn('X.js: Must pass at least two arguments to X.notEqual()');
             return undefined;
@@ -1010,7 +1010,7 @@
             return true;
         },
 
-        notEqual: function() {
+        notEqual: function(p) {
             for (var l = p.length, i = 0; i < l - 1; i++) {  // pyramidal comparison without self-check 
                 for (var j = i + 1; j < l; j++) {
                     if (p[i] == p[j]) return false;
@@ -1031,7 +1031,7 @@
             return p[0] < p[1];
         },
 
-        lessEqual: function() {
+        lessEqual: function(p) {
             return p[0] <= p[1];
         },
 
@@ -1056,7 +1056,7 @@
             return Math.sqrt(p[0]);
         },
 
-        sin: function() {
+        sin: function(p) {
             return Math.sin(p[0]);
         },
 
