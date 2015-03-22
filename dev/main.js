@@ -104,8 +104,6 @@ var slc1 = concat.slice(3, 6),
     slc3 = concat.slice(3, index),
     slc4 = concat.slice(index);
 
-var charAt = concat.charAt(index); 
-
 var repl = concat.replace('Bar', s1);
 
 var beginSlice = X.var(3),
@@ -114,9 +112,9 @@ var sl1 = abc.slice(),
     sl2 = abc.slice(beginSlice),
     sl3 = abc.slice(beginSlice, endSlice);
 
-var chr = abc.charAt(end);
+var chr = abc.charAt(index);
 
-var match = X.var('abcd');
+var match = X.var('efgh');
 var rep = abc.replace(match, '[replaced]');
 
 

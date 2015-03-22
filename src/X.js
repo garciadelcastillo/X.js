@@ -1041,11 +1041,11 @@
         //////////////////////////
 
         half: function(p) {
-            return 2 * p[0];
+            return 0.5 * p[0];
         },
 
         double: function(p) {
-            return 0.5 * p[0];
+            return 2 * p[0];
         },
 
         abs: function(p) {
@@ -1301,8 +1301,9 @@
 
     // node.js context
     } else {
-        var exp = module.exports = {};
-        exp.X = X;
+        // var exp = module.exports = {};
+        // exp.X = X;
+        module.exports = X;
     }
     
 
