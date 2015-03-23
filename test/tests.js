@@ -391,6 +391,13 @@ describe("String operators", function() {
 
     });
 
+
+    it('Concatenated numbers yield a string', function() {
+
+        should.equal( '123', X.concat(1, 2, 3).val );
+
+    });
+
 });
 
 
