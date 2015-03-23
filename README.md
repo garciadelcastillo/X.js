@@ -4,7 +4,7 @@ X.js is a library to emulate associative variables in JavaScript. It provides a 
 
 ## Why associative variables?
 
-Some time ago, I realized that when teaching newcomers how to code, they often had a hard time wrapping their minds around the following notion:
+Some time ago I realized that, when teaching newcomers how to code, they often had a hard time wrapping their minds around the following notion:
 
 ```javascript
 var a = 1;
@@ -27,7 +27,7 @@ Download the latest version from [the distribution folder](https://github.com/ga
 If in a browser, a global `X` object will be available as a namespace for the library. If in Node.js, you should manually require it via:
 
 ```javascript
-var X = require('somepath/x-0.2.0.min.js');  // an actual npm package is wip...
+var X = require('somepath/x-0.1.0.min.js');  // an actual npm package is wip...
 ```
 
 ## Hello World
@@ -58,7 +58,9 @@ And yes, the hello world example... ;)
 ```javascript
 var greet = X.var('Hello'),
     to = X.var('world');
+
 var greeting = X.concat(greet, ' ', to, '!');       // greeting.val => "Hello world!"
+
 to.val = 'folks';                                   // greeting.val => "Hello folks!"
 greet.val = 'Howdy';                                // greeting.val => "Howdy folks!"
 ```
@@ -219,12 +221,11 @@ var lsd = X.compose(colors, animals, function(parents) {
 console.log(lsd.val);  // ["I just saw a blue dragon!", "I just saw a red turtle!", "I just saw a green turtle!"]
 ```
 
-
 ## More to come
-. Object literals as variable value
-. onChange events
-. Value transitions with delays
-. Sibling vars (two way associations)
+* Object literals as variable value
+* onChange events
+* Value transitions with delays
+* Sibling vars (two way associations)
 
 
 
