@@ -19,7 +19,8 @@ var andAB  = X.and(a, b),
     andATrue = X.and(a, true),
     andAFalse = X.and(a, false);
 
-var orCD  = X.or(c, d),
+var orAB = X.or(a, b),
+    orCD  = X.or(c, d),
     orBCD = X.or(b, c, d),
     orCTrue = X.or(c, true),
     orCFalse = X.or(c, false);
@@ -99,20 +100,20 @@ var upp = s1.toUpperCase(),
 var concat = X.add(s1, ' ', s2, ' ', s3);
 
 var index = X.var(6);
-var slc1 = concat.slice(3, 6),
-    slc2 = concat.slice(5),
-    slc3 = concat.slice(3, index),
-    slc4 = concat.slice(index);
+// var slc1 = concat.slice(3, 6),
+//     slc2 = concat.slice(5),
+//     slc3 = concat.slice(3, index),
+//     slc4 = concat.slice(index);
 
 var repl = concat.replace('Bar', s1);
 
 var beginSlice = X.var(3),
     endSlice = X.var(10);
-var sl1 = abc.slice(),
-    sl2 = abc.slice(beginSlice),
-    sl3 = abc.slice(beginSlice, endSlice);
+// var sl1 = abc.slice(),
+//     sl2 = abc.slice(beginSlice),
+//     sl3 = abc.slice(beginSlice, endSlice);
 
-var chr = abc.charAt(index);
+// var chr = abc.charAt(index);
 
 var match = X.var('efgh');
 var rep = abc.replace(match, '[replaced]');
@@ -123,7 +124,7 @@ var rep = abc.replace(match, '[replaced]');
 // METHOD CHAINING! :)                                           //
 ///////////////////////////////////////////////////////////////////
 
-var chain = X.add(s1, ' ', s2, ' ', s3).slice(1, 10).replace('Bar', s1);
+// var chain = X.add(s1, ' ', s2, ' ', s3).slice(1, 10).replace('Bar', s1);
 
 
 
@@ -157,6 +158,13 @@ console.log(sum.val);  // ["A0", "A1", "A2", "B0", "B1", "B2", "C0", "C1", "C2",
 // Data can be of mixed type! With array-like xvars and JS primitives...
 var hypenated = X.add(chars, '-', nums);
 console.log(hypenated.val);  // ["A-0", "B-1", "C-2", "D-2", "E-2"]
+
+hypenated.setMatchingPattern('shortest-list');
+console.log(hypenated.val);
+
+hypenated.setMatchingPattern('cross-reference');
+console.log(hypenated.val);
+
 
 var count = X.var(10),
     step = X.var(1.5),
@@ -194,17 +202,35 @@ console.log(lsd.val);
 
 
 
-/////////
-// WIP //
-/////////
+
+
+var sl1 = abc.slice(),
+    sl2 = abc.slice(3),
+    sl3 = abc.slice(3, 10),
+    sl4 = abc.slice(3, [5, 10]),
+    sl5 = abc.slice([0, 2, 4, 6], [10, 12]);
+
+var arrArr = X.var([
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'] 
+]);
+
+var asl1 = arrArr.slice(),
+    asl2 = arrArr.slice(3),
+    asl3 = arrArr.slice(3, 7);
+
+
+var dummy = X.var('foobarbaz'),
+    ch = dummy.charAt();
+
+
+
+// /////////
+// // WIP //
+// /////////
 
 // Searches the passed object for all XVAR properties, and attaches
 // an all caps gsetted accessor for ease of access:
-console.log(abc.val);  // XVAR values must be get/set with the .val accessor 
 X.injectVars(window);  // attach all caps gsetted accessors
-console.log(ABC);      // same functionality can now be accesed through 'ABC'
-ABC = 'foobarbaz';
-console.log(ABC);
-
 
 
