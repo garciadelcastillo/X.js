@@ -68,9 +68,6 @@
 
         obj._makeChildOfParents(parents);
         obj._update = _typeMap[TYPE]._updates[update];
-        // obj._updateParentArrayness();
-        // obj._matchUpdate();
-        // obj._updateValueType();
         obj._updateElement();
         return obj;
     };
@@ -108,16 +105,14 @@
         this._xvar = true;
         this._name = '';
         this._type = 'XBASE';
-        // this._jsType = 'null';
         this._isConstrained = true;
         this._wrappedSingleParent = false;
 
-        this._hasArrayParent = false;  // is any of its parents' _value an array?
+        this._isArray = false;  // is the _value in this XVAR array-like?
         this._parentLengths = [];
-        this._matchPatternType = 'longest-list';  // will add shortest list, cross reference, etc.
+        this._matchPatternType = 'longest-list';  // default behavior
         this._matchPattern = [];  // an array with indices representing the match pattern
 
-        this._isArray = false;
 
         /**
          * Contains references to objects representing characteristic properties of
@@ -228,14 +223,6 @@
 
 
 
-
-        // ███╗   ██╗███████╗██╗    ██╗    ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
-        // ████╗  ██║██╔════╝██║    ██║    ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
-        // ██╔██╗ ██║█████╗  ██║ █╗ ██║    ██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗
-        // ██║╚██╗██║██╔══╝  ██║███╗██║    ██║   ██║██╔═══╝ ██║  ██║██╔══██║   ██║   ██╔══╝  ╚════██║
-        // ██║ ╚████║███████╗╚███╔███╔╝    ╚██████╔╝██║     ██████╔╝██║  ██║   ██║   ███████╗███████║
-        // ╚═╝  ╚═══╝╚══════╝ ╚══╝╚══╝      ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
-
         // An identity update function to be overriden
         this._update = function(parents) {
             return this._value;
@@ -253,24 +240,15 @@
         // A function that encompasses all update actions for this object
         this._updateElement = function(forceDeep) {
 
-            /**
-             * PSEUDO:
-             *     . if parent is singleton wrapped, just go... (not true, parent can be an array!)
-             *     . check if parents have same length (with new convention)
-             *     . if not, update the matching pattern
-             *     . then use the matching pattern to call the _update function
-             */
-            
             // Check if size of parents has changed
             var changed = false;
             if (forceDeep) {
                 changed = true;
             } else {
                 for (var l = this._parents.length, i = 0; i < l; i++) {
-                    // var len = this._parents[i]._value.length || 0;  // string parents were yielding arrays
                     var len = this._parents[i]._isArray ? this._parents[i]._value.length : 0;
                     if (len != this._parentLengths[i]) {
-                        this._parentLengths[i] = len;  // WILL THERE BE A PROBLEM HERE ON FIRST CREATION? _parentLengths is empty...
+                        this._parentLengths[i] = len;  
                         changed = true;
                     }
                 }
@@ -301,8 +279,6 @@
         /**
          * Updates _matchPattern according to parents' lengths and _matchPatternType
          * @return {[type]} [description]
-         * @TODO how do we account here for array children from single parents? 
-         *      e.g. var arrSin = arr1.sin() 
          */
         this._updateMatchPattern = function() {
             if (DEV) console.log('Updating matchPattern for ' + this._name);
@@ -402,138 +378,6 @@
             return false;
         };
 
-
-
-
-
-
-        // // quasi-private methods
-        // this._updateChildren = function() {
-        //     this._children.forEach(function(elem) {
-        //         if (DEV) console.log('DEBUG: updating "' + elem._name + '"');
-        //         elem._updateParentArrayness();
-        //         elem._matchUpdate();  // includes an improved call to _update()
-        //         elem._updateValueType();
-        //         elem._updateChildren();
-        //     });
-        // };
-
-
-        // /**
-        //  * Discerns if this object's _value is array, and iterates over
-        //  * the update method accordingly
-        //  * @return {[type]} [description]
-        //  */
-        // this._matchUpdate = function() {
-        //     // console.log('_matchUpdate for ' + this._value);
-
-        //     // it should be checked about here that parents are still arrays
-        //     // and make wrapping arrangements if necessary
-
-        //     // if parents are arrays
-        //     if (this._hasArrayParent) {
-
-        //         // Checks if parents' lengths have remained constant, and otherwise 
-        //         // updates the matching pattern
-        //         // @TODO: this assumes all parents are arrays, will need to incorporate
-        //         //      a wrapping check
-        //         var lens = [];
-        //         for (var i = 0; i < this._parents.length; i++) {
-        //             lens.push(this._parents[i]._value.length);  
-        //         }
-        //         if ( !is(lens).deepIdentical(this._parentLengths) ) {
-        //             this._parentLengths = lens;
-        //             this._updateMatchPattern();
-        //         }
-
-        //         // Call _update passing extracted parent values according to matching pattern
-        //         this._value = [];
-        //         for (var i = 0; i < this._matchPattern.length; i++) {
-        //             // console.log('match update ' + i + ' with ' + this._matchPattern[i]);
-        //             var slice = this._parentSlice(this._matchPattern[i]);
-        //             // console.log(slice);
-        //             this._value.push(this._update(slice));
-        //         }
-
-        //     // if parents are singletons
-        //     } else {
-        //         // console.log('singleton');
-        //         var slice = this._parentSlice();
-        //         // console.log(slice);
-        //         this._value = this._update(slice);
-        //     }
-        // };    
-
-
-
-        
-
-        // /**
-        //  * Checks if any parent is an array, and if so, flags this element _value as
-        //  * array and performs matchpatterning updates
-        //  * @return {[type]} [description]
-        //  */
-        // this._updateParentArrayness = function() {
-        //     if (DEV) console.log('Updating parent arrayness for ' + this._value);
-
-        //     // Once any of object's parents was ever an array, all parents are accessed
-        //     // via an array wrapper, so there is no more need for this check 
-        //     if (this._hasArrayParent) return;  
-
-        //     // Check if any parent is array, and flag the element
-        //     for (var i = 0; i < this._parents.length; i++) {
-        //         // if (is(this._parents[i]._value).type('array')) {
-        //         if (this._parents[i]._jsType === 'array') {
-        //             this._hasArrayParent = true;
-        //             break;
-        //         }
-        //     }
-
-        //     // If no parent is array, we are good
-        //     if (!this._hasArrayParent) return;
-
-        //     // => DISABLED, was part of the attempt to regularize changing parents 
-        //     // // TEMP sanity
-        //     // if (this._parents[0]._type === 'XARRWRAP') return;
-
-        //     // // Otherwise, some parent became array for the first time, and 
-        //     // // we need to reparent this object to array wrappers
-
-        //     // var oldParents = this._parents;
-        //     // this._makeOrphan();  // remove links to parents, and from parents
-
-        //     // var wrappedParents = [];
-        //     // for (var l = oldParents.length, i = 0; i < l; i++) {
-        //     //     //wrappedParents.push( build('XARRWRAP', [oldParents[i]], 'fromParent') );  // infinite loop!
-        //     // };
-        //     // this._makeChildOfParents(wrappedParents);
-
-
-        //     // => THIS WAS MOVED TO _matchUpdate
-        //     // // Checks if parents' lengths have remained constant, and otherwise 
-        //     // // updates the matching pattern
-        //     // // @TODO: this assumes all parents are arrays, will need to incorporate
-        //     // //      a wrapping check
-        //     // var lens = [];
-        //     // for (var i = 0; i < this._parents.length; i++) {
-        //     //     lens.push(this._parents[i]._value.length);  
-        //     // }
-        //     // if ( !is(lens).deepIdentical(this._parentLengths) ) {
-        //     //     this._parentLengths = lens;
-        //     //     this._updateMatchPattern();
-        //     // }
-        // };
-
-        // this._updateValueType = function() {
-        //     if (!is(this._value).type(this._jsType)) {
-        //         this._jsType = dataType(this._value);
-        //         if (DEV) console.log('Updated _jsType to ' + this._jsType + ' for ' + this._value);
-        //     }
-        // };
-
-
-
-
     };
 
     // This has better performance than Object.defineProperties(): http://jsperf.com/getter-setter/7
@@ -552,9 +396,6 @@
                 // update for wrap objects 
                 } else {
                     this._value = x;  
-                    // this._jsType = dataType(this._value);
-                    
-                    // this._updateElement();
                     this._checkArrayness();
                     this._updateChildren();
                 }
@@ -569,8 +410,6 @@
             return false;
         }
         this._matchPatternType = matchType;
-        // this._updateMatchPattern();
-        // this._matchUpdate();
         this._updateElement(true);  // force deep update, including matching pattern
         this._updateChildren();
         return true;
@@ -615,58 +454,6 @@
     };
 
 
-
-
-
-
-
-
-
-
-
-    // // ██╗  ██╗ █████╗ ██████╗ ██████╗ ██╗    ██╗██████╗  █████╗ ██████╗ 
-    // // ╚██╗██╔╝██╔══██╗██╔══██╗██╔══██╗██║    ██║██╔══██╗██╔══██╗██╔══██╗
-    // //  ╚███╔╝ ███████║██████╔╝██████╔╝██║ █╗ ██║██████╔╝███████║██████╔╝
-    // //  ██╔██╗ ██╔══██║██╔══██╗██╔══██╗██║███╗██║██╔══██╗██╔══██║██╔═══╝ 
-    // // ██╔╝ ██╗██║  ██║██║  ██║██║  ██║╚███╔███╔╝██║  ██║██║  ██║██║     
-    // // ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     
-
-    // /**
-    //  * An object wrapper to interface between a parent whose value maybe non/array
-    //  * and a child that needs array parents. Tries to solve the problem of a nonarray
-    //  * parent turning into one (and viceversa). 
-    //  * @param {XVAR} value
-    //  */
-    // var XARRWRAP = function(value) {
-    //     XBASE.call(this, value);
-    //     this._type = 'XARRWRAP';
-    //     this._isConstrained = true;
-
-    //     // Overrides _matchUpdate to simply set a new wrapped _value 
-    //     this._matchUpdate = function() {
-    //         this._value = this._parents[0]._jsType !== 'array' ?
-    //                 [this._parents[0]._value] : 
-    //                 this._parents[0]._value;
-    //     };
-    // };
-
-    // var buildArrayChild = function(parent) {
-    //     return build('XARRWRAP', arguments, 'fromParent');
-    // };
-
-    // XARRWRAP._updates = {
-
-    //     // Dummy update (never used)
-    //     // @deprecated
-    //     fromParent: function(p) {
-    //         return p[0];
-    //     }
-    // };
-
-    // // DEBUG 
-    // X._wrapArr = function(target) {
-    //     return buildArrayChild(target);
-    // };
 
 
 
@@ -725,48 +512,24 @@
     // SPECIAL PROTOS //
     ////////////////////
 
-    // --> NOT WORKING, FIX
-
-    // Implements String.slice()
-    // Only works for strings right now, will do arrays in the future too
-    // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/slice
+    // Implements String.slice() or Array.slice()
     XVAR.prototype.slice = function(beginSlice, endSlice) {
-        // if (this._jsType !== 'string') {
+        // TRY TO AVOID ARGUMENT CONTROL, rely on default JS behaviors and functions checks for each item
         // if ( is(this._value).type('string') ) {
         //     if (log) console.warn('X.js: XVAR.slice() only works with string single parents at the time');
         //     return undefined;
         // };
 
-        // // @TODO this should be optimized not to need to create dummy vars to fullfil this
-        // if (arguments.length == 0) return build('XVAR', [this, 0, this.length()], 'slice');
-        // if (arguments.length == 1) return build('XVAR', [this, beginSlice, this.length()], 'slice');
-        // if (arguments.length == 2) return build('XVAR', [this, beginSlice, endSlice], 'slice');
         return build('XVAR', [this, beginSlice, endSlice], 'slice');
     };
 
     // Implements String.charAt()
     XVAR.prototype.charAt = function(index) {
-        // // if (this._jsType !== 'string') {
-        // if ( is(this._value).type('string') ) {
-        //     if (log) console.warn('X.js: XVAR.charAt() only works with string parents at the time');
-        //     return undefined;
-        // };
-
-        // if (arguments.length != 1) {
-        //     if (log) console.warn('X.js: Invalid arguments for XVAR.charAt()');
-        //     return undefined;
-        // };
-
         return build('XVAR', [this, index], 'charAt');
     };
 
     // Implements String.replace()
     XVAR.prototype.replace = function(subStr, newSubStr) {
-        // if (arguments.length != 2) {
-        //     if (log) console.warn('X.js: Invalid arguments for XVAR.replace()');
-        //     return undefined;
-        // };
-
         return build('XVAR', [this, subStr, newSubStr], 'replace');
     };
 
