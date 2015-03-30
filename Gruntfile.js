@@ -49,6 +49,10 @@ module.exports = function(grunt) {
         },
         src: ['test/tests.js']
       }
+    },
+
+    clean: {
+      test: ['test/<%= pkg.name %>.js']
     }
 
   });
@@ -56,10 +60,11 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-mocha-test');
+  grunt.loadNpmTasks('grunt-contrib-clean');
 
   var build_steps = ['concat:build', 'uglify'];
   grunt.registerTask('default', build_steps );
   grunt.registerTask('build', build_steps);
-  grunt.registerTask('test', ['concat:test', 'mochaTest']);
+  grunt.registerTask('test', ['concat:test', 'mochaTest', 'clean:test']);
 
 };
