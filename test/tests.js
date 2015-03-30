@@ -281,6 +281,38 @@ describe("Random numbers", function() {
 
     });
 
+    it('Should maintain prev seed when adding element', function() {
+
+        low.val = 0;
+        high.val = 1;
+        var prev = ran.val;
+
+        prev.should.be.within(0, 1);
+
+        high.push(1, 1, 1);
+        var newVal = ran.val;
+        for (var i = 0; i < 4; i++) {
+            newVal[i].should.be.within(0, 1);
+        }
+
+        high.val = [1, 10, 100, 1000];
+        should.equal( ran.val[0], newVal[0] );
+        should.equal( ran.val[1], 10 * newVal[1] );
+        should.equal( ran.val[2], 100 * newVal[2] );
+        should.equal( ran.val[3], 1000 * newVal[3] );
+
+        ran.next();
+        var nextVal = ran.val;
+        should.notEqual( nextVal[0], newVal[0] );
+        should.notEqual( nextVal[1], 10 * newVal[1] );
+        should.notEqual( nextVal[2], 100 * newVal[2] );
+        should.notEqual( nextVal[3], 1000 * newVal[3] );
+
+        high.val = 1;
+        should.equal( nextVal[0], ran.val );
+
+    });
+
 });
 
 
