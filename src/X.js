@@ -533,6 +533,34 @@
         return build('XVAR', [this, subStr, newSubStr], 'replace');
     };
 
+    /**
+     * Adds elements to this object's _value, and trigger updates
+     * @return {Number} New array length
+     */
+    XVAR.prototype.push = function() {
+        var newV = this._isArray ? this._value : [this._value];
+        for (var i = 0; i < arguments.length; i++) {
+            newV.push(arguments[i]);
+        }
+        this.val = newV;
+        return this._value.length;  // as in Array.prototype.push();
+    };
+
+    /**
+     * Removes the last element of the array
+     * @return {Object} Returns the popped object
+     */
+    XVAR.prototype.pop = function() {
+        if (this._isConstrained) {
+            if (log) console.warn('X.js: Sorry, this variable is constrained');
+            return undefined;
+        }
+        if (!this._isArray) return undefined;
+        var popped = this._value.pop();  // a shallow object
+        this.val = this._value;  // triggers updates
+        return popped;
+    };
+
 
     //////////////////////
     // BASE CONSTRUCTOR //

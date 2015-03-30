@@ -1,7 +1,7 @@
 {
   "name": "X",
   "casedName": "X",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "author": "Jose Luis Garcia del Castillo",
   "description": "Associative variables for JavaScript",
   "repository": {

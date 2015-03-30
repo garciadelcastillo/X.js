@@ -530,6 +530,7 @@ describe("Array operators", function() {
 // ██║     ██║   ██║██║╚██╔╝██║██╔═══╝ ██║   ██║╚════██║██╔══╝  
 // ╚██████╗╚██████╔╝██║ ╚═╝ ██║██║     ╚██████╔╝███████║███████╗
 //  ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚═╝      ╚═════╝ ╚══════╝╚══════╝
+
 describe("Composite operator", function() {
 
 
@@ -632,3 +633,53 @@ describe("Variable arrayness affairs", function() {
 
 })
 
+
+
+
+// ██████╗ ██╗   ██╗███████╗██╗  ██╗    ██████╗  ██████╗ ██████╗ 
+// ██╔══██╗██║   ██║██╔════╝██║  ██║    ██╔══██╗██╔═══██╗██╔══██╗
+// ██████╔╝██║   ██║███████╗███████║    ██████╔╝██║   ██║██████╔╝
+// ██╔═══╝ ██║   ██║╚════██║██╔══██║    ██╔═══╝ ██║   ██║██╔═══╝ 
+// ██║     ╚██████╔╝███████║██║  ██║    ██║     ╚██████╔╝██║     
+// ╚═╝      ╚═════╝ ╚══════╝╚═╝  ╚═╝    ╚═╝      ╚═════╝ ╚═╝     
+
+describe("Pushing and Popping", function() {
+
+    var a = X.var(10), 
+        b = X.var(5);
+    var add = X.add(a, b);
+
+    it('Returns correct result after Pushing', function() {
+
+        should.equal( 15, add.val );
+
+        should.equal( a.push(20), 2 );
+        should.deepEqual( [15, 25], add.val );
+
+        should.equal( a.push(30), 3 );
+        should.deepEqual( [15, 25, 35], add.val );
+
+    });
+
+    it("Popping works", function() {
+
+        should.equal( 30, a.pop() );
+        should.deepEqual( [15, 25], add.val );
+
+        should.equal( 20, a.pop() );
+        should.deepEqual( [15], add.val );
+
+        should.equal( 10, a.pop() );
+        should.deepEqual( [], a.val );
+        should.equal( "5", add.val );  
+        should.equal( undefined, a.pop() );
+
+    })
+
+    it("Popping a primitive doesn't work", function() {
+
+        should.equal( undefined, b.pop() );
+    
+    });
+
+});
