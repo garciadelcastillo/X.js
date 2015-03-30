@@ -581,3 +581,54 @@ describe("Composite operator", function() {
 
 
 
+//  █████╗ ██████╗ ██████╗  █████╗ ██╗   ██╗███╗   ██╗███████╗███████╗███████╗
+// ██╔══██╗██╔══██╗██╔══██╗██╔══██╗╚██╗ ██╔╝████╗  ██║██╔════╝██╔════╝██╔════╝
+// ███████║██████╔╝██████╔╝███████║ ╚████╔╝ ██╔██╗ ██║█████╗  ███████╗███████╗
+// ██╔══██║██╔══██╗██╔══██╗██╔══██║  ╚██╔╝  ██║╚██╗██║██╔══╝  ╚════██║╚════██║
+// ██║  ██║██║  ██║██║  ██║██║  ██║   ██║   ██║ ╚████║███████╗███████║███████║
+// ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═══╝╚══════╝╚══════╝╚══════╝
+
+describe("Variable arrayness affairs", function() {
+
+    var foo = X.var("a"),
+        bar = X.var(0),
+        baz = X.var("?");
+
+    var add = X.add(foo, bar, baz),
+        concat = X.concat(foo, '-', bar, '-', baz);
+
+    it('Returns correct result after declaration', function() {
+
+        should.equal( "a0?", add.val );
+        should.equal( "a-0-?", concat.val );
+
+    });
+
+    it("Works with parents becoming arrays", function() {
+
+        foo.val = ['a', 'b', 'c'];
+        should.deepEqual( ['a0?', 'b0?', 'c0?'], add.val );
+        should.deepEqual( ['a-0-?', 'b-0-?', 'c-0-?'], concat.val );
+
+        bar.val = [0, 1];
+        should.deepEqual( ['a0?', 'b1?', 'c1?'], add.val );
+        should.deepEqual( ['a-0-?', 'b-1-?', 'c-1-?'], concat.val ); 
+
+        baz.val = ['!', '?', '~', '^'];
+        should.deepEqual( ['a0!', 'b1?', 'c1~', 'c1^'], add.val );
+        should.deepEqual( ['a-0-!', 'b-1-?', 'c-1-~', 'c-1-^'], concat.val ); 
+
+    });
+
+    it("Works with parents back to non-arrays", function() {
+
+        foo.val = 'foo';
+        bar.val = 'bar';
+        baz.val = 'baz';
+        should.equal( "foobarbaz", add.val );
+        should.equal( "foo-bar-baz", concat.val );       
+
+    })
+
+})
+
