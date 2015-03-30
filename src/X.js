@@ -9,7 +9,7 @@
     // ╚██████╗╚██████╔╝██║  ██║███████╗
     //  ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝
 
-    var version = '0.1.1';
+    var version = '0.2.0';
 
     // Some constants
     var TAU = 2 * Math.PI,              // ;)
@@ -112,6 +112,8 @@
         this._parentLengths = [];
         this._matchPatternType = 'longest-list';  // default behavior
         this._matchPattern = [];  // an array with indices representing the match pattern
+
+        this._preUpdate = null;  // a custom _preUdate function to be run once for special entities (e.g. .random())
 
 
         /**
@@ -260,17 +262,20 @@
                 this._updateMatchPattern();  // recalculate parent matching pattern
             }
 
+            // Check if there a _preUpdate funtion was registered, and run it
+            if (this._preUpdate) this._preUpdate();
+
             // Now call the _update function according to the matching pattern
             // Call _update passing extracted parent values according to matching pattern
             if (this._isArray) {
                 this._value = [];
                 for (var i = 0; i < this._matchPattern.length; i++) {
                     var slice = this._parentSlice(this._matchPattern[i]);
-                    this._value.push(this._update(slice));
+                    this._value.push(this._update(slice, i));
                 }
             } else {
                 var slice = this._parentSlice();
-                this._value = this._update(slice);
+                this._value = this._update(slice, 0);
             }
 
         };
@@ -797,16 +802,7 @@
      * @return {XVAR}
      */
     X.random = function(lim0, lim1) {
-        if (arguments.length > 2) {
-            if (log) console.log("X.js: Invalid arguments for X.random()");
-            return undefined;
-        }
-
-        if ( is(lim0).type('array') || is(lim1).type('array') ) {
-            if (log) console.log("X.js: X.random() currently only accepts non-array arguments");
-            return undefined;
-        }
-
+        // Add the possibility of customizing the random range
         var min, max;
         if (typeof lim1 !== 'undefined') {
             min = lim0;
@@ -816,20 +812,50 @@
             max = typeof lim0 !== 'undefined' ? lim0 : 1;
         }
 
-        // Create the object and bind a .next() method to get new values
-        var ran = build('XVAR', [Math.random(), min, max], 'random');
-        ran['next'] = randomNext;
+        // Create the object and bind a custom properties and update functions
+        var ran = build('XVAR', [min, max], 'random', {
+            next: randomNext,
+            _randomSeeds: [],
+            _preUpdate: randomPreupdate
+        });
 
         return ran;
     };
 
-    // @TODO: must adapt this to work with arrays (and not do the same seed for all elements...)
+    /**
+     * Resets random seeds and trigger updates 
+     */
     var randomNext = function() {
         // Uses parent setter to generate a new normalized random value (and trigger updates)
-        this._parents[0].val = Math.random();
+        this._randomSeeds = [];
+        for (var l = this._matchPattern.length, i = 0; i < l; i++) {
+            this._randomSeeds.push(Math.random());
+        };
+        this._updateElement();
+        this._updateChildren();
+    };
+
+    /**
+     * A custom preupdate function to check if more seeds are necessary
+     * @return {Boolean} Returns true if new seeds were generated
+     */
+    var randomPreupdate = function() {
+        var diff = this._matchPattern.length - this._randomSeeds.length;
+        if (diff < 1) return false;  // if there are more seeds than matches, keep the excess
+        if (DEV) console.log("Creating " + diff + " new random seeds");
+        for (var i = 0; i < diff; i++) {
+            this._randomSeeds.push(Math.random());
+        }
+        return true;
     };
 
 
+    // A composite expression is created passing all parents as arguments, 
+    // plus an update callback function which will be passed an array with 
+    // all the parents' value(s) in ordered sequence.
+    // Note passed objects are the actual values, so no need to use the .val accessor 
+    // If parents are arrays, individual items will be passed to the callback
+    // according to the specified matching pattern
     X.compose = function() {
         var a = arguments, len = a.length;
 
@@ -915,6 +941,9 @@
      * must return the updated value. This was done so to allow for 
      * multiple calls to the update function between elements in 
      * array-like parents. 
+     * UPDATE: they now also get passed the index of current update
+     * iteration as the second argument. This is typically i for arrays
+     * or -1 for non-array objects. See 'random'.
      * @type {Object}
      */
     XVAR._updates = {
@@ -1087,9 +1116,9 @@
             return Math.atan2(p[0], p[1]);  // inputs were in the form (Y, X)
         },
 
-        random: function(p) {
+        random: function(p, i) {
             // Updates the value without changing the random parameter. See 'randomNext'.
-            return p[0] * (p[2] - p[1]) + p[1];
+            return this._randomSeeds[i] * (p[1] - p[0]) + p[0];
         },
 
 
