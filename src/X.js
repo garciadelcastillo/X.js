@@ -56,8 +56,13 @@
     // FORMER buildARR
     var build = function(TYPE, parents, update, customProps) {
         var obj = new _typeMap[TYPE]();
-        
+    
+
+        obj._makeChildOfParents(parents);
+        obj._update = _typeMap[TYPE]._updates[update];
+
         // Add custom properties to object if applicable, and before any update
+        // Do it after setting obj._update, in case it should be overriden
         if (customProps) {
             for (var prop in customProps) {
                 if (customProps.hasOwnProperty(prop)) {
@@ -66,9 +71,7 @@
             }
         }
 
-        obj._makeChildOfParents(parents);
-        obj._update = _typeMap[TYPE]._updates[update];
-        obj._updateElement();
+        obj._updateElement();  // update once everything is in place
         return obj;
     };
 
@@ -875,10 +878,9 @@
             parents.push(a[i]);
         };
 
-        // @TODO: it is not elegant that the custom update function is not registered
-        // as a parent. This should be fixed when the arrayParenthood problem is fixed.
+        // Use a dummy update function, to be overriden by the custom arg callback
         return build('XVAR', parents, 'compose', {
-            _customUpdate: callback
+            _update: callback
         });
 
     };
@@ -1195,12 +1197,10 @@
         // MISC FUNCTIONS //
         ////////////////////
 
-        // @TODO: it is not elegant that the custom update function is not registered
-        // as a parent. This should be fixed when the arrayParenthood problem is fixed.
+        // A dummy update, will in fact be overriden by the custom callback
         compose: function(p) {
-            return this._customUpdate(p);
+            return p[0];
         }
-
 
     };
 
@@ -1228,7 +1228,6 @@
     var _typeMap = {
         'XWRAP'   : XWRAP,
         'XVAR'    : XVAR
-        // 'XARRWRAP': XARRWRAP
     };
 
     /**
