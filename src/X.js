@@ -24,14 +24,14 @@
 
     // All created XVARS
     var elements = [];
-    if (DEV) X._elements = elements;  // development accessor alias
+    if (DEV) X._elements = elements;  // development public accessor alias
 
     // Incremental id assignment
     var xIndex = 0;
 
     // Set how verbose X.js is
     var log = 1;
-    X.setLogLevel = function(value) {
+    X.logLevel = function(value) {
         if (arguments.length == 0) return log;
         log = value;
     };
@@ -39,11 +39,11 @@
 
 
 
-    ////////////////////////
-    // INTERNAL FUNCTIONS //
-    ////////////////////////
+    ////////////////////
+    // INTERNAL STUFF //
+    ////////////////////
     
-    // Checks if this object has only one wrapped parent
+    // Checks if this object has one and only one wrapped parent
     var checkConstrainedParenthood = function(obj) {
         if (obj._parents.length == 1 && obj._parents[0]._type == 'XWRAP') {
             obj._isConstrained = false;
@@ -51,15 +51,13 @@
         }
     };    
 
-
     // A generic constructor interface to create XVARs with type, args and update function name
     // FORMER buildARR
     var build = function(TYPE, parents, update, customProps) {
-        var obj = new _typeMap[TYPE]();
+        var obj = new _typeMap[TYPE]();  // is this XVAR or XWRAP?
     
-
         obj._makeChildOfParents(parents);
-        obj._update = _typeMap[TYPE]._updates[update];
+        obj._update = _typeMap[TYPE]._updates[update];  // choose which update function to bind
 
         // Add custom properties to object if applicable, and before any update
         // Do it after setting obj._update, in case it should be overriden
@@ -111,6 +109,7 @@
         this._isConstrained = true;
         this._wrappedSingleParent = false;
 
+        // managing array-like xvars
         this._isArray = false;  // is the _value in this XVAR array-like?
         this._parentLengths = [];
         this._matchPatternType = 'longest-list';  // default behavior
@@ -127,7 +126,7 @@
          */
         this._properties = {};
 
-        // Add it to the collection
+        // Add it to the internal collection manager
         elements.push(this);
 
         // ADAPTED FROM BOTH XBASE AND XBASEARR
@@ -143,7 +142,7 @@
             var patt = [];
             for (var l = parents.length, i = 0; i < l; i++) {
                 this._parentLengths.push(0);  // defaults to singletons, should be corrected on first update
-                patt.push(-1);
+                patt.push(-1);  // -1 is used to flag singleton elements
             }
             this._matchPattern.push(patt);
 
@@ -175,7 +174,7 @@
             // if array parents 
             } else {
                 for (var len = this._parents.length, i = 0; i < len; i++) {
-                    arr.push( indexArray[i] === -1 ? 
+                    arr.push( indexArray[i] === -1 ?   // is singleton?
                             this._parents[i]._value :
                             this._parents[i]._value[indexArray[i]]);
                 }
@@ -185,7 +184,7 @@
         };
 
         /**
-         * Resets parent objects from this object, and removes this children 
+         * Resets parent objects from this object, and removes this child 
          * from parents. Performs search on parents based on own _id
          * @return {Boolean} 
          */
@@ -214,7 +213,7 @@
             this._isArray = false;
 
             if (this._type == 'XWRAP') {
-                this._isArray = is(this._value).type('array');
+                this._isArray = is(this._value).type('array');  // USING ONTOLOGY.JS, TO REMOVE
             } else {
                 for (var l = this._parentLengths.length, i = 0; i < l; i++) {
                     if (this._parentLengths[i]) {  // if any parent length != 0
@@ -226,14 +225,12 @@
             return this._isArray;
         };
 
-
-
         // An identity update function to be overriden
         this._update = function(parents) {
             return this._value;
         };
 
-        // Calls updateElement and Children on all object's children
+        // Calls updateElement and updateChildren on all object's children
         this._updateChildren = function() {
             this._children.forEach(function(elem) {
                 if (DEV) console.log('DEBUG: updating "' + elem._name + '"');
@@ -411,9 +408,14 @@
         }
     };
 
+    var _matchTypes = {
+        'longest-list': true,
+        'shortest-list': true,
+        'cross-reference': true
+    };
 
     XBASE.prototype.setMatchingPattern = function(matchType) {
-        if (!_matchTypesAvailable[matchType]) {
+        if (!_matchTypes[matchType]) {
             if (log) console.warn('X.js: unrecognized matching pattern type for XBASE.setMatchingPattern()');
             return false;
         }
@@ -423,11 +425,7 @@
         return true;
     };
 
-    var _matchTypesAvailable = {
-        'longest-list': true,
-        'shortest-list': true,
-        'cross-reference': true
-    };
+
 
 
 
@@ -457,6 +455,7 @@
     XWRAP.prototype = Object.create(XBASE.prototype);
     XWRAP.prototype.constructor = XWRAP;
 
+    // Returns the value wrapped inside a XWRAP object
     var wrap = function(value){
         return new XWRAP(value);
     };
@@ -853,12 +852,16 @@
     };
 
 
-    // A composite expression is created passing all parents as arguments, 
-    // plus an update callback function which will be passed an array with 
-    // all the parents' value(s) in ordered sequence.
-    // Note passed objects are the actual values, so no need to use the .val accessor 
-    // If parents are arrays, individual items will be passed to the callback
-    // according to the specified matching pattern
+
+    /**
+     * A composite expression is created passing all parents as arguments, 
+     * plus an update callback function which will be passed an array with 
+     * all the parents' value(s) in ordered sequence.
+     * Note passed objects are the actual values, so no need to use the .val accessor 
+     * If parents are arrays, individual items will be passed to the callback
+     * according to the specified matching pattern
+     * @return {[type]} [description]
+     */
     X.compose = function() {
         var a = arguments, len = a.length;
 
@@ -868,7 +871,7 @@
         };
 
         var callback = a[len - 1];
-        if ( !is(callback).type('function') ) {
+        if ( !is(callback).type('function') ) {  // USING ONTOLOGY, TO DEPRECATE
             if (log) console.warn('X.js: last argument must be an update function for X.compose()');
             return undefined;
         };
@@ -905,8 +908,9 @@
     };
 
     /**
-     * Creates an array like numeric series of 'count' steps 
-     * between 'start' and 'end'
+     * Creates an array-like numeric series of 'count' steps 
+     * between 'start' and 'end'. Note that, for example, two steps 
+     * will generate three elements.
      */
     X.range = function(count, start, end) {
         if (arguments.length != 3) {
@@ -1152,6 +1156,7 @@
         //////////////////////
 
         // returns the length of parent string (or array, if parent is array of arrays)
+        // should have no default, and return undefined if not eligible? This would be 'truer' to JS...
         length: function(p) {
             return typeof p[0].length !== 'undefined' ? p[0].length : 1; 
         },
