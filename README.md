@@ -1,8 +1,8 @@
-![X.js | Associative Variabes in JavaScript](https://github.com/garciadelcastillo/X.js/blob/master/assets/xjs_banner_800.png "X.js | Associative Variabes in JavaScript")
+![X.js | Associative Variabes in JavaScript](https://github.com/garciadelcastillo/X.js/blob/master/assets/xjs_banner_728.png "X.js | Associative Variabes in JavaScript")
 
-X.js is a library to emulate associative variables in JavaScript. It provides a constructive API to create `XVAR` objects wrapping a `value` whose runtime value updates synchronously after its parents. The library uses a combination of intuitive syntax, parent-children update trees, modified getters and setters, and safe defaults, to provide an interface with associative feel.
+X.js is a library to emulate Associative Variables in JavaScript. It provides a constructive API to create `XVAR` objects wrapping a `value` whose runtime value updates synchronously after its parents. The library uses a combination of intuitive syntax, parent-children update trees, modified getters and setters, and safe defaults, to provide an interface with associative feel.
 
-## Why associative variables?
+## Why Associative Variables?
 
 Some time ago I realized that, when teaching newcomers how to code, they often had a hard time wrapping their minds around the following notion:
 
@@ -221,7 +221,7 @@ var lsd = X.compose(colors, animals, function(parents) {
 console.log(lsd.val);  // ["I just saw a blue dragon!", "I just saw a red turtle!", "I just saw a green turtle!"]
 ```
 
-## More to come
+## More to Come
 * Object literals as variable value
 * onChange events
 * Value transitions with delays
