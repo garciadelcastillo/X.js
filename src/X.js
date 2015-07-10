@@ -75,7 +75,7 @@
 
     // Returns a string with the type of data for the _value property of passed object
     var dataType = function(obj) {
-        return what(obj).type();
+        return what(obj).type();  // ONTOLOGY, TO DEPRECATE
     };
 
 
@@ -513,7 +513,7 @@
                     this._properties[prop] :
                     this._register(prop, build('XVAR', [this], prop));
         };
-    })
+    });
 
     ////////////////////
     // SPECIAL PROTOS //
