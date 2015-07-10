@@ -2,7 +2,7 @@
 
 X.js is a library to emulate Associative Variables in JavaScript. It provides a constructive API to create `XVAR` objects wrapping a `value` whose runtime value updates synchronously after its parents. The library uses a combination of intuitive syntax, parent-children update trees, modified getters and setters, and safe defaults, to provide an interface with associative feel. 
 
-X.js is read 'big x dot js' ;)
+X.js is read _"big x dot js"_ ;)
 
 ## Why Associative Variables?
 
