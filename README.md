@@ -130,7 +130,7 @@ var add = X.add(u, v);
 console.log(add.val);       // 3
 
 u.val = 'foo';
-console.log(add.val);       // "foo3"
+console.log(add.val);       // "foo2"
 ```
 
 When necessary, explicit associative type casting is also available:
